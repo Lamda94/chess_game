@@ -66,18 +66,29 @@ test('dos jugadores se emparejan y juegan una partida real', async ({ browser })
   await expect(blancas.getByRole('grid', { name: 'Tablero de ajedrez' })).toBeVisible();
   await blancas.screenshot({ path: `${SHOTS}/04-partida-blancas.png` });
 
-  // Apertura española: cuatro jugadas que ejercitan peón, caballo y alfil.
-  await mover(blancas, 'e2', 'e4');
-  await expect(negras.getByText('e4', { exact: true })).toBeVisible();
+  /**
+   * Apertura española: cinco jugadas que ejercitan peón, caballo y alfil.
+   *
+   * Se espera a que cada una aparezca en la pantalla del rival antes de jugar la
+   * siguiente. No es cortesía: quien mueve necesita ver el tablero actualizado
+   * para que su clic sea legal. Encadenarlas sin esperar funcionaba sólo contra
+   * un servidor local — contra un despliegue real, con el ida y vuelta de la
+   * red de por medio, el clic caía sobre un tablero viejo y la jugada ni
+   * siquiera se enviaba.
+   */
+  const apertura = [
+    { pagina: () => blancas, desde: 'e2', hasta: 'e4', san: 'e4' },
+    { pagina: () => negras, desde: 'e7', hasta: 'e5', san: 'e5' },
+    { pagina: () => blancas, desde: 'g1', hasta: 'f3', san: 'Nf3' },
+    { pagina: () => negras, desde: 'b8', hasta: 'c6', san: 'Nc6' },
+    { pagina: () => blancas, desde: 'f1', hasta: 'b5', san: 'Bb5' },
+  ] as const;
 
-  await mover(negras, 'e7', 'e5');
-  await mover(blancas, 'g1', 'f3');
-  await mover(negras, 'b8', 'c6');
-  await mover(blancas, 'f1', 'b5');
-
-  // La lista de jugadas del rival refleja todo lo jugado.
-  for (const san of ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']) {
-    await expect(negras.getByText(san, { exact: true }).first()).toBeVisible();
+  for (const jugada of apertura) {
+    await mover(jugada.pagina(), jugada.desde, jugada.hasta);
+    // Aparece en los dos tableros: el que mueve y el que espera.
+    await expect(blancas.getByText(jugada.san, { exact: true }).first()).toBeVisible();
+    await expect(negras.getByText(jugada.san, { exact: true }).first()).toBeVisible();
   }
 
   await blancas.screenshot({ path: `${SHOTS}/05-espanola-blancas.png` });

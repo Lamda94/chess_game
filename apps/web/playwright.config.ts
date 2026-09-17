@@ -14,6 +14,14 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
     // Un despliegue de prueba puede estar detrás de un certificado propio.
     ignoreHTTPSErrors: true,
+    /**
+     * Para verificar un despliegue recién hecho, cuando el DNS todavía no
+     * propagó al resolver de la máquina que corre las pruebas:
+     *   E2E_RESOLVE="mi-dominio 203.0.113.10"
+     */
+    launchOptions: process.env.E2E_RESOLVE
+      ? { args: [`--host-resolver-rules=MAP ${process.env.E2E_RESOLVE}`] }
+      : {},
     trace: 'retain-on-failure',
     viewport: { width: 1440, height: 900 },
   },
