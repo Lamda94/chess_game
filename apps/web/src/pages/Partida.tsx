@@ -219,16 +219,51 @@ export function Partida() {
             <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent)' }}>
               {TERMINATION_LABEL[over.termination].toUpperCase()}
             </span>
-            <h2 className="gb-display m-0 text-[40px] leading-none">
-              {myColor === null
-                ? over.result === 'DRAW'
-                  ? 'Tablas'
-                  : `Ganan las ${over.result === 'WHITE' ? 'blancas' : 'negras'}`
-                : { win: 'Ganaste', loss: 'Perdiste', draw: 'Tablas' }[outcomeFor(over.result, myColor)]}
-            </h2>
-            <Link to="/" className="gb-btn gb-btn--primary gb-btn--block">
-              Volver al lobby
-            </Link>
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="gb-display m-0 text-[40px] leading-none">
+                {myColor === null
+                  ? over.result === 'DRAW'
+                    ? 'Tablas'
+                    : `Ganan las ${over.result === 'WHITE' ? 'blancas' : 'negras'}`
+                  : { win: 'Ganaste', loss: 'Perdiste', draw: 'Tablas' }[outcomeFor(over.result, myColor)]}
+              </h2>
+              {over.ratingDelta && myColor ? (
+                <div className="flex flex-col items-end gap-0.5">
+                  <span
+                    className="gb-mono text-[28px] font-bold leading-none"
+                    style={{
+                      color:
+                        over.ratingDelta[myColor] > 0
+                          ? 'var(--success)'
+                          : over.ratingDelta[myColor] < 0
+                            ? 'var(--danger)'
+                            : 'var(--text-muted)',
+                    }}
+                  >
+                    {over.ratingDelta[myColor] > 0 ? '+' : ''}
+                    {over.ratingDelta[myColor]}
+                  </span>
+                  <span className="gb-mono text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                    {state.status === 'FINISHED' && over.ratingAfter
+                      ? `${over.ratingAfter[myColor] - over.ratingDelta[myColor]} → ${over.ratingAfter[myColor]}`
+                      : null}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+            {!state.rated ? (
+              <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                Partida amistosa: no cuenta para el rating.
+              </span>
+            ) : null}
+            <div className="flex gap-2">
+              <Link to={`/analisis/${id}`} className="gb-btn gb-btn--primary" style={{ flex: 1 }}>
+                Analizar partida
+              </Link>
+              <Link to="/" className="gb-btn gb-btn--secondary" style={{ flex: 1 }}>
+                Volver al lobby
+              </Link>
+            </div>
           </div>
         ) : null}
 

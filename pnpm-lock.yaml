@@ -38,6 +38,9 @@ importers:
       '@gambito/chess-core':
         specifier: workspace:*
         version: link:../../packages/chess-core
+      '@gambito/rating':
+        specifier: workspace:*
+        version: link:../../packages/rating
       '@gambito/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -120,6 +123,9 @@ importers:
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.3
+      stockfish:
+        specifier: 19.0.0
+        version: 19.0.0
       zustand:
         specifier: ^5.0.3
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
@@ -157,6 +163,15 @@ importers:
       chess.js:
         specifier: ^1.4.0
         version: 1.4.0
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)
+
+  packages/rating:
     devDependencies:
       typescript:
         specifier: ^5.7.2
@@ -1834,6 +1849,10 @@ packages:
 
   std-env@3.10.0:
     resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
+
+  stockfish@19.0.0:
+    resolution: {integrity: sha512-jDyYLbqNpboQcMs5HodTHI2CrKL74zkQWb1+sgoNXw5HI6avTblW4G0X7afFt3BBOc6VbTSkOV64EUxm/DWSpg==}
+    hasBin: true
 
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
@@ -3566,6 +3585,8 @@ snapshots:
   standard-as-callback@2.1.0: {}
 
   std-env@3.10.0: {}
+
+  stockfish@19.0.0: {}
 
   strip-json-comments@5.0.3: {}
 

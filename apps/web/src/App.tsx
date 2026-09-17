@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Spinner } from '@gambito/ui';
 import { useSession } from './state/session.js';
@@ -8,6 +9,15 @@ import { ElegirNombre } from './pages/ElegirNombre.js';
 import { Lobby } from './pages/Lobby.js';
 import { Buscar } from './pages/Buscar.js';
 import { Partida } from './pages/Partida.js';
+import { Perfil } from './pages/Perfil.js';
+
+/**
+ * La práctica y el análisis son las dos pantallas que usan Stockfish y cargan
+ * bastante código propio. Se parten en trozos aparte para que nadie que sólo
+ * entra a jugar pague ese peso en el arranque.
+ */
+const Practica = lazy(() => import('./pages/Practica.js').then((m) => ({ default: m.Practica })));
+const Analisis = lazy(() => import('./pages/Analisis.js').then((m) => ({ default: m.Analisis })));
 
 function Cargando() {
   return (
@@ -38,6 +48,28 @@ export function App() {
         <Route path="/elegir-nombre" element={<ElegirNombre />} />
         <Route path="/" element={<Privado><Lobby /></Privado>} />
         <Route path="/buscar" element={<Privado><Buscar /></Privado>} />
+        <Route
+          path="/practica"
+          element={
+            <Privado>
+              <Suspense fallback={<Cargando />}>
+                <Practica />
+              </Suspense>
+            </Privado>
+          }
+        />
+        <Route path="/perfil" element={<Privado><Perfil /></Privado>} />
+        <Route path="/perfil/:username" element={<Privado><Perfil /></Privado>} />
+        <Route
+          path="/analisis/:id"
+          element={
+            <Privado>
+              <Suspense fallback={<Cargando />}>
+                <Analisis />
+              </Suspense>
+            </Privado>
+          }
+        />
         <Route path="/partida/:id" element={<Privado><Partida /></Privado>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

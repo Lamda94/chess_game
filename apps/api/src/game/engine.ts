@@ -12,6 +12,7 @@ import {
   opposite,
 } from '@gambito/shared';
 import { prisma } from '../db.js';
+import { applyRatedResult, countUnratedGame } from './ratings.js';
 
 /** Lo que el motor necesita para avisar al mundo. Lo implementa la capa de sockets. */
 export interface GameBroadcaster {
@@ -376,9 +377,39 @@ export class GameEngine {
     const pgn = game.chess.pgn();
     const finalFen = game.chess.fen();
 
+    // El rating se mueve antes de guardar la partida, para dejar registrado en la
+    // misma fila con cuánto entró y con cuánto salió cada jugador.
+    const change = game.rated
+      ? await applyRatedResult({
+          whiteId: game.players.white.id,
+          blackId: game.players.black.id,
+          category: game.category,
+          result,
+        })
+      : null;
+
+    if (!game.rated) {
+      await countUnratedGame([game.players.white.id, game.players.black.id], game.category);
+    }
+
     await prisma.game.update({
       where: { id: game.id },
-      data: { status: 'FINISHED', result, termination, pgn, finalFen, endedAt: new Date() },
+      data: {
+        status: 'FINISHED',
+        result,
+        termination,
+        pgn,
+        finalFen,
+        endedAt: new Date(),
+        ...(change
+          ? {
+              whiteRatingBefore: change.before.white,
+              blackRatingBefore: change.before.black,
+              whiteRatingAfter: change.after.white,
+              blackRatingAfter: change.after.black,
+            }
+          : {}),
+      },
     });
 
     this.broadcaster?.gameOver(game.id, {
@@ -387,9 +418,8 @@ export class GameEngine {
       termination,
       finalFen,
       pgn,
-      // El rating se calcula en la Fase 2, cuando entra Glicko-2.
-      ratingDelta: null,
-      ratingAfter: null,
+      ratingDelta: change?.delta ?? null,
+      ratingAfter: change?.after ?? null,
     });
 
     // Se mantiene un rato en memoria para que la pantalla de fin pueda sincronizar.

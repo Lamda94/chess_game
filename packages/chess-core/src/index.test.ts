@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ChessGame, STARTING_FEN, isLightSquare, materialBalance, SQUARES } from './index.js';
+import {
+  ChessGame,
+  STARTING_FEN,
+  isLightSquare,
+  materialBalance,
+  startingPositionWithout,
+  identifyOpening,
+  sanMovesFromPgn,
+  SQUARES,
+} from './index.js';
 
 describe('tablero', () => {
   it('tiene 64 casillas, de a8 a h1', () => {
@@ -105,5 +114,78 @@ describe('balance de material', () => {
     expect(balance.capturedByWhite).toEqual(['p']);
     expect(balance.capturedByBlack).toEqual(['p', 'q']);
     expect(balance.advantage).toBe(-9);
+  });
+});
+
+describe('hándicap de material', () => {
+  it('sin quitar nada devuelve la posición inicial', () => {
+    expect(startingPositionWithout([])).toBe(STARTING_FEN);
+  });
+
+  it('quitar un caballo deja una posición jugable', () => {
+    const fen = startingPositionWithout(['b8']);
+    const game = new ChessGame(fen);
+    expect(game.pieces()).toHaveLength(31);
+    expect(game.legalMoves().length).toBeGreaterThan(0);
+  });
+
+  it('quitar la torre de a1 también quita el enroque largo de las blancas', () => {
+    const fen = startingPositionWithout(['a1']);
+    expect(fen.split(' ')[2]).toBe('Kkq');
+    // Y la posición sigue siendo válida para las reglas.
+    expect(new ChessGame(fen).legalMoves().length).toBeGreaterThan(0);
+  });
+
+  it('quitar las dos torres de dama deja sólo los enroques cortos', () => {
+    expect(startingPositionWithout(['a1', 'a8']).split(' ')[2]).toBe('Kk');
+  });
+
+  it('quitar la dama no toca los enroques', () => {
+    expect(startingPositionWithout(['d1', 'd8']).split(' ')[2]).toBe('KQkq');
+  });
+});
+
+describe('libro de aperturas', () => {
+  it('reconoce la española por sus tres primeras jugadas', () => {
+    const apertura = identifyOpening(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']);
+    expect(apertura?.name).toBe('Apertura española');
+    expect(apertura?.eco).toBe('C60');
+  });
+
+  it('prefiere la línea más específica, no la primera que encaje', () => {
+    // Estas jugadas encajan con "Siciliana", "línea abierta" y "Dragón" a la vez.
+    const apertura = identifyOpening(
+      'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be3 Bg7 f3'.split(' '),
+    );
+    expect(apertura?.name).toBe('Dragón, ataque Yugoslavo');
+  });
+
+  it('con una sola jugada devuelve la familia', () => {
+    expect(identifyOpening(['d4'])?.name).toBe('Apertura de peón de dama');
+  });
+
+  it('devuelve null si ni la primera jugada está en el libro', () => {
+    expect(identifyOpening(['h4', 'h5'])).toBeNull();
+  });
+
+  it('una partida sin jugadas no tiene apertura', () => {
+    expect(identifyOpening([])).toBeNull();
+  });
+
+  it('extrae las jugadas de un PGN con cabeceras y comentarios', () => {
+    const pgn = [
+      '[Event "Partida de Gambito"]',
+      '[White "alguien"]',
+      '[Result "1-0"]',
+      '',
+      '1. e4 {buena} e5 2. Nf3 $1 Nc6 3. Bb5 (3. Bc4 Bc5) a6 1-0',
+    ].join('\n');
+    expect(sanMovesFromPgn(pgn)).toEqual(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6']);
+  });
+
+  it('el PGN que genera una partida real se reconoce', () => {
+    const game = new ChessGame();
+    for (const uci of ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1b5']) game.move(uci);
+    expect(identifyOpening(sanMovesFromPgn(game.pgn()))?.name).toBe('Apertura española');
   });
 });

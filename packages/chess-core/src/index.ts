@@ -1,3 +1,4 @@
+export * from './openings.js';
 import { Chess } from 'chess.js';
 import type { Color, Termination } from '@gambito/shared';
 
@@ -184,6 +185,36 @@ export class ChessGame {
       this.chess.setHeader(key, value);
     }
   }
+}
+
+/**
+ * Posición inicial a la que se le sacan piezas, para las partidas con hándicap.
+ *
+ * Quitar una torre no es sólo borrarla del tablero: también hay que quitar el
+ * enroque de ese lado, o la posición queda ilegal y chess.js la rechaza.
+ */
+export function startingPositionWithout(squares: Square[]): string {
+  const chess = new Chess(STARTING_FEN);
+  for (const square of squares) {
+    chess.remove(square as never);
+  }
+
+  const parts = chess.fen().split(' ');
+  const rookRights: Record<string, string> = { a1: 'Q', h1: 'K', a8: 'q', h8: 'k' };
+  let castling = parts[2] ?? '-';
+
+  for (const square of squares) {
+    // Sacar un rey quita los dos enroques de ese color; sacar una torre, sólo el suyo.
+    if (square === 'e1') castling = castling.replace(/[KQ]/g, '');
+    else if (square === 'e8') castling = castling.replace(/[kq]/g, '');
+    else {
+      const right = rookRights[square];
+      if (right) castling = castling.replace(right, '');
+    }
+  }
+
+  parts[2] = castling === '' ? '-' : castling;
+  return parts.join(' ');
 }
 
 /** Valor en peones de cada pieza, para el marcador de material capturado. */

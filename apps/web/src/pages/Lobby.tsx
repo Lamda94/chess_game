@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PRESET_TIME_CONTROLS, categoryFor, formatTimeControl, CATEGORY_LABEL, type Category, type TimeControl } from '@gambito/shared';
 import { get } from '../api/client.js';
@@ -37,11 +37,16 @@ export function Lobby() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-7 px-5 py-8 sm:px-10">
-      <div>
-        <h1 className="gb-display m-0 text-[38px] leading-tight">Buenas, {user?.username}</h1>
-        <p className="mt-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-          Elegí un control de tiempo y el servidor te busca rival.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="gb-display m-0 text-[38px] leading-tight">Buenas, {user?.username}</h1>
+          <p className="mt-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+            Elegí un control de tiempo y el servidor te busca rival.
+          </p>
+        </div>
+        <Link to="/practica" className="gb-btn gb-btn--secondary">
+          Practicar contra la IA
+        </Link>
       </div>
 
       <section className="flex flex-col gap-3.5">

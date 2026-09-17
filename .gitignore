@@ -17,3 +17,7 @@ apps/web/test-results/
 
 # Estado de sesión del harness, no del proyecto
 .claude/handoff*.md
+apps/*/.claude/
+
+# El motor se copia desde node_modules en cada build
+apps/web/public/engine/

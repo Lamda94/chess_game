@@ -91,6 +91,78 @@ test('recorrido de escritorio', async ({ browser }) => {
   await claro.screenshot({ path: `${OUT}/7-lobby-claro.png` });
 });
 
+test('recorrido de la sala de práctica', async ({ browser }) => {
+  const page = await nuevaPagina(browser, 1440, 900, 'dark');
+  await registrar(page, 'tour_prac');
+  await page.goto('/practica');
+  await expect(page.getByRole('heading', { name: 'Práctica contra la IA' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('Cargando el motor…')).toBeHidden({ timeout: 60_000 });
+
+  // Una apertura corta para que la captura muestre notación, evaluación y pista.
+  for (const [desde, hasta] of [['e2', 'e4'], ['g1', 'f3'], ['f1', 'c4']] as Array<[string, string]>) {
+    await page.getByRole('gridcell', { name: new RegExp(`^${desde},`) }).click();
+    await page.getByRole('gridcell', { name: new RegExp(`^${hasta},`) }).click();
+    await expect(page.getByText('Tu turno')).toBeVisible({ timeout: 30_000 });
+  }
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${OUT}/11-practica.png` });
+});
+
+test('recorrido de perfil y análisis', async ({ browser }) => {
+  const a = await nuevaPagina(browser, 1440, 1000, 'dark');
+  const b = await nuevaPagina(browser, 1440, 1000, 'dark');
+  const nombreA = await registrar(a, 'tour_perf');
+  await registrar(b, 'tour_riv2');
+
+  await a.getByRole('button', { name: '3+2', exact: true }).click();
+  await b.getByRole('button', { name: '3+2', exact: true }).click();
+  await a.waitForURL(/\/partida\//, { timeout: 30_000 });
+  await b.waitForURL(/\/partida\//, { timeout: 30_000 });
+
+  const gameId = a.url().split('/partida/')[1]!;
+  const colorA = await a.evaluate(async (id) => {
+    const [yo, partida] = await Promise.all([
+      fetch('/api/auth/me').then((r) => r.json()),
+      fetch(`/api/games/${id}`).then((r) => r.json()),
+    ]);
+    return partida.game.white.id === yo.user.id ? 'white' : 'black';
+  }, gameId);
+  const blancas = colorA === 'white' ? a : b;
+  const negras = colorA === 'white' ? b : a;
+
+  const mover = async (page: Page, desde: string, hasta: string) => {
+    await page.getByRole('gridcell', { name: new RegExp(`^${desde},`) }).click();
+    await page.getByRole('gridcell', { name: new RegExp(`^${hasta},`) }).click();
+    await page.waitForTimeout(200);
+  };
+  await mover(blancas, 'e2', 'e4');
+  await mover(negras, 'e7', 'e5');
+  await mover(blancas, 'f1', 'c4');
+  await mover(negras, 'b8', 'c6');
+  await mover(blancas, 'd1', 'h5');
+  await mover(negras, 'g8', 'f6');
+  await mover(blancas, 'h5', 'f7');
+  await expect(blancas.getByRole('heading', { name: 'Ganaste' })).toBeVisible({ timeout: 15_000 });
+  await blancas.screenshot({ path: `${OUT}/12-fin-con-rating.png` });
+
+  await blancas.getByRole('link', { name: 'Analizar partida' }).click();
+  await expect(blancas.getByText('RESUMEN')).toBeVisible({ timeout: 90_000 });
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.getByRole('button', { name: 'Jugada siguiente' }).click();
+  await blancas.waitForTimeout(400);
+  await blancas.screenshot({ path: `${OUT}/13-analisis.png` });
+
+  const perfil = colorA === 'white' ? a : b;
+  await perfil.goto(`/perfil/${colorA === 'white' ? nombreA : (await perfil.evaluate(() => fetch('/api/auth/me').then((r) => r.json()).then((d) => d.user.username)))}`);
+  await expect(perfil.getByRole('heading', { level: 1 })).toBeVisible();
+  await perfil.waitForTimeout(500);
+  await perfil.screenshot({ path: `${OUT}/14-perfil.png`, fullPage: true });
+});
+
 test('recorrido en teléfono', async ({ browser }) => {
   const movil = await nuevaPagina(browser, 390, 844, 'dark');
   const rival = await nuevaPagina(browser, 1280, 800, 'dark');

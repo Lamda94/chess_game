@@ -123,3 +123,13 @@
   cursor: pointer;
   min-height: 44px;
 }
+
+/* Las flechas cubren el tablero entero y no interceptan clics. */
+.gb-board__arrows {
+  position: absolute;
+  inset: 0;
+  width: var(--gb-board);
+  height: var(--gb-board);
+  pointer-events: none;
+  z-index: 2;
+}

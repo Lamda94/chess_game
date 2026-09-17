@@ -16,6 +16,8 @@ export interface BoardProps {
    */
   size?: string;
   showCoordinates?: boolean;
+  /** Flechas dibujadas encima del tablero, para señalar jugadas sugeridas. */
+  arrows?: Array<{ from: Square; to: Square; color?: string }>;
 }
 
 const PROMOTION_CHOICES: PieceType[] = ['q', 'r', 'b', 'n'];
@@ -26,6 +28,7 @@ export function Board({
   lastMove,
   size = 'min(560px, calc(100vw - 32px))',
   showCoordinates = true,
+  arrows = [],
 }: BoardProps) {
   const [dragging, setDragging] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -122,6 +125,8 @@ export function Board({
         ))}
       </div>
 
+      {arrows.length > 0 ? <CapaFlechas arrows={arrows} orientation={orientation} /> : null}
+
       {board.promotion ? (
         <div className="gb-promotion" role="dialog" aria-label="Elegí la pieza de coronación">
           <div className="gb-promotion__panel">
@@ -146,5 +151,66 @@ export function Board({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Flechas encima del tablero. Se dibujan en un SVG de 8×8 unidades para que el
+ * cálculo sea el mismo a cualquier tamaño: una casilla es exactamente 1 unidad.
+ */
+function CapaFlechas({
+  arrows,
+  orientation,
+}: {
+  arrows: NonNullable<BoardProps['arrows']>;
+  orientation: Color;
+}) {
+  const centro = (square: Square): [number, number] => {
+    const file = FILES.indexOf(square[0] as (typeof FILES)[number]);
+    const rank = Number(square[1]);
+    const x = orientation === 'white' ? file : 7 - file;
+    const y = orientation === 'white' ? 8 - rank : rank - 1;
+    return [x + 0.5, y + 0.5];
+  };
+
+  return (
+    <svg className="gb-board__arrows" viewBox="0 0 8 8" aria-hidden="true">
+      <defs>
+        <marker
+          id="gb-punta"
+          viewBox="0 0 10 10"
+          refX="7"
+          refY="5"
+          markerWidth="3.2"
+          markerHeight="3.2"
+          orient="auto-start-reverse"
+        >
+          <path d="M0 0 L10 5 L0 10 z" fill="context-stroke" />
+        </marker>
+      </defs>
+      {arrows.map((flecha, indice) => {
+        const [x1, y1] = centro(flecha.from);
+        const [x2, y2] = centro(flecha.to);
+        // La flecha arranca un poco fuera del centro para no tapar la pieza.
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const largo = Math.hypot(dx, dy) || 1;
+        const recorte = 0.3;
+        return (
+          <line
+            key={`${flecha.from}${flecha.to}${indice}`}
+            x1={x1 + (dx / largo) * recorte}
+            y1={y1 + (dy / largo) * recorte}
+            x2={x2 - (dx / largo) * recorte}
+            y2={y2 - (dy / largo) * recorte}
+            stroke={flecha.color ?? 'var(--cool)'}
+            strokeWidth="0.16"
+            strokeLinecap="round"
+            markerEnd="url(#gb-punta)"
+            opacity="0.85"
+          />
+        );
+      })}
+    </svg>
   );
 }

@@ -9,6 +9,7 @@ import { env, isProd } from './env.js';
 import { authenticatePlugin, HttpError } from './plugins/authenticate.js';
 import { authRoutes } from './auth/routes.js';
 import { gameRoutes } from './routes/games.js';
+import { profileRoutes } from './routes/profile.js';
 
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -67,6 +68,7 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await app.register(authRoutes);
   await app.register(gameRoutes);
+  await app.register(profileRoutes);
 
   return app;
 }

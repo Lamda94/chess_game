@@ -259,6 +259,84 @@ describe('partida completa de punta a punta', () => {
   });
 });
 
+describe('rating', () => {
+  it('una partida clasificatoria mueve los dos ratings en sentidos opuestos', async () => {
+    const blancas = await register('rating_b');
+    const negras = await register('rating_n');
+
+    const socketA = open(blancas);
+    const socketB = open(negras);
+    await Promise.all([once(socketA, 'connect'), once(socketB, 'connect')]);
+
+    const matchedA = once<MatchedPayload>(socketA, 'queue:matched');
+    const matchedB = once<MatchedPayload>(socketB, 'queue:matched');
+    const timeControl = { initialSec: 300, incrementSec: 0 };
+    socketA.emit('queue:join', { timeControl, rated: true });
+    socketB.emit('queue:join', { timeControl, rated: true });
+    const [a] = await Promise.all([matchedA, matchedB]);
+
+    socketA.emit('game:sync', { gameId: a.gameId });
+    socketB.emit('game:sync', { gameId: a.gameId });
+    await once<GameState>(socketA, 'game:state');
+
+    const fin = once<GameOverPayload>(socketB, 'game:over');
+    socketA.emit('game:resign', { gameId: a.gameId });
+    const resultado = await fin;
+
+    // Las dos cuentas arrancan en 1500, así que lo que gana una lo pierde la otra.
+    expect(resultado.ratingDelta).not.toBeNull();
+    const ganador = a.color === 'white' ? 'black' : 'white';
+    const perdedor = a.color === 'white' ? 'white' : 'black';
+    expect(resultado.ratingDelta![ganador]).toBeGreaterThan(0);
+    expect(resultado.ratingDelta![perdedor]).toBeLessThan(0);
+    expect(resultado.ratingDelta!.white + resultado.ratingDelta!.black).toBe(0);
+
+    // Y queda guardado de dónde a dónde fue cada uno.
+    const guardada = await prisma.game.findUniqueOrThrow({ where: { id: a.gameId } });
+    expect(guardada.whiteRatingBefore).toBe(1500);
+    expect(guardada.blackRatingBefore).toBe(1500);
+    expect(guardada.whiteRatingAfter).toBe(resultado.ratingAfter!.white);
+
+    const fila = await prisma.rating.findUniqueOrThrow({
+      where: { userId_category: { userId: blancas.id, category: 'BLITZ' } },
+    });
+    expect(fila.gamesPlayed).toBe(1);
+    // La desviación baja: el sistema ya sabe algo del jugador.
+    expect(fila.rd).toBeLessThan(350);
+  });
+
+  it('una partida amistosa cuenta la partida pero no toca el rating', async () => {
+    const blancas = await register('casual_b');
+    const negras = await register('casual_n');
+
+    const socketA = open(blancas);
+    const socketB = open(negras);
+    await Promise.all([once(socketA, 'connect'), once(socketB, 'connect')]);
+
+    const matchedA = once<MatchedPayload>(socketA, 'queue:matched');
+    const matchedB = once<MatchedPayload>(socketB, 'queue:matched');
+    const timeControl = { initialSec: 600, incrementSec: 0 };
+    socketA.emit('queue:join', { timeControl, rated: false });
+    socketB.emit('queue:join', { timeControl, rated: false });
+    const [a] = await Promise.all([matchedA, matchedB]);
+
+    socketA.emit('game:sync', { gameId: a.gameId });
+    socketB.emit('game:sync', { gameId: a.gameId });
+    await once<GameState>(socketA, 'game:state');
+
+    const fin = once<GameOverPayload>(socketB, 'game:over');
+    socketA.emit('game:resign', { gameId: a.gameId });
+    const resultado = await fin;
+
+    expect(resultado.ratingDelta).toBeNull();
+    const fila = await prisma.rating.findUniqueOrThrow({
+      where: { userId_category: { userId: blancas.id, category: 'RAPID' } },
+    });
+    expect(fila.rating).toBe(1500);
+    expect(fila.gamesPlayed).toBe(1);
+  });
+});
+
 describe('recuperación tras un reinicio', () => {
   it('retoma una partida que quedó activa y la cierra por tiempo', async () => {
     const blancas = await register('huerfana_b');

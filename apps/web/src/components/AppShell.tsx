@@ -55,8 +55,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </button>
 
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm sm:inline">{user?.username}</span>
-          <Avatar username={user?.username ?? null} url={user?.avatarUrl} status="online" size={40} />
+          <Link to="/perfil" className="flex items-center gap-3" style={{ color: 'var(--text-primary)' }}>
+            <span className="hidden text-sm sm:inline">{user?.username}</span>
+            <Avatar username={user?.username ?? null} url={user?.avatarUrl} status="online" size={40} />
+          </Link>
           <button
             type="button"
             className="gb-btn gb-btn--ghost"
