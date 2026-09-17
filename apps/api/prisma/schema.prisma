@@ -98,6 +98,7 @@ model User {
   ratings        Rating[]
   oauthAccounts  OAuthAccount[]
   refreshTokens  RefreshToken[]
+  authTokens     AuthToken[]
   gamesAsWhite   Game[]         @relation("WhitePlayer")
   gamesAsBlack   Game[]         @relation("BlackPlayer")
   chatMessages   ChatMessage[]
@@ -127,6 +128,29 @@ model OAuthAccount {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
+}
+
+/// Para qué sirve un token de un solo uso enviado por correo.
+enum AuthTokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+/// Token de un solo uso que viaja por correo. Igual que el refresh, sólo se
+/// guarda el hash: quien lea la tabla no puede usarlos.
+model AuthToken {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  /// Sellado al consumirlo: un token vale una sola vez.
+  usedAt    DateTime?
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
 }
 
 model RefreshToken {

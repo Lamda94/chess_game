@@ -21,3 +21,4 @@ apps/*/.claude/
 
 # El motor se copia desde node_modules en cada build
 apps/web/public/engine/
+.mail/

@@ -18,6 +18,9 @@ import { TorneoCrear } from './pages/TorneoCrear.js';
 import { TorneoSala } from './pages/TorneoSala.js';
 import { Desafio } from './pages/Desafio.js';
 import { Moderacion } from './pages/Moderacion.js';
+import { Olvide } from './pages/Olvide.js';
+import { Restablecer } from './pages/Restablecer.js';
+import { Verificar } from './pages/Verificar.js';
 
 /**
  * La práctica y el análisis son las dos pantallas que usan Stockfish y cargan
@@ -53,6 +56,9 @@ export function App() {
     <SocketProvider enabled={Boolean(user && !user.needsUsername)}>
       <Routes>
         <Route path="/entrar" element={<Entrar />} />
+        <Route path="/olvide" element={<Olvide />} />
+        <Route path="/restablecer" element={<Restablecer />} />
+        <Route path="/verificar" element={<Verificar />} />
         <Route path="/elegir-nombre" element={<ElegirNombre />} />
         <Route path="/" element={<Privado><Lobby /></Privado>} />
         <Route path="/buscar" element={<Privado><Buscar /></Privado>} />

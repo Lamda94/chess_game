@@ -36,6 +36,30 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/* ------------------------------------------------------------------ */
+/* Verificación de correo y recuperación de contraseña                  */
+/* ------------------------------------------------------------------ */
+
+/** El token viaja en la URL del correo: opaco, largo y en base64url. */
+export const authTokenSchema = z
+  .string()
+  .trim()
+  .min(20, 'Enlace inválido')
+  .max(200)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Enlace inválido');
+
+export const verifyEmailSchema = z.object({ token: authTokenSchema });
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: authTokenSchema,
+  password: passwordSchema,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 /** Paso posterior al OAuth: el proveedor no nos da un nombre de jugador. */
 export const chooseUsernameSchema = z.object({ username: usernameSchema });
 export type ChooseUsernameInput = z.infer<typeof chooseUsernameSchema>;
@@ -50,6 +74,8 @@ export interface SessionUser {
   avatarUrl: string | null;
   country: string | null;
   role: Role;
+  /** Falso hasta que se abre el enlace del correo de alta. */
+  emailVerified: boolean;
   /** true mientras el alta por OAuth no eligió nombre de jugador. */
   needsUsername: boolean;
 }

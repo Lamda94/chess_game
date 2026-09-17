@@ -32,6 +32,7 @@ export interface DbUser {
   id: string;
   username: string | null;
   email: string;
+  emailVerified: boolean;
   avatarUrl: string | null;
   country: string | null;
   role: SessionUser['role'];
@@ -42,6 +43,7 @@ export function toSessionUser(user: DbUser): SessionUser {
     id: user.id,
     username: user.username,
     email: user.email,
+    emailVerified: user.emailVerified,
     avatarUrl: user.avatarUrl,
     country: user.country,
     role: user.role,

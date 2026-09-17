@@ -33,12 +33,22 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenClaim
   }
 }
 
-/** El refresh es opaco: un valor aleatorio del que sólo guardamos el hash. */
-export function createRefreshToken(): { token: string; hash: string } {
-  const token = randomBytes(48).toString('base64url');
-  return { token, hash: hashRefreshToken(token) };
+/**
+ * Token opaco: un valor aleatorio del que sólo guardamos el hash, para que un
+ * volcado de la tabla no sirva para robar sesiones ni para restablecer
+ * contraseñas ajenas. Lo usan el refresh y los enlaces que van por correo.
+ */
+export function createOpaqueToken(bytes = 48): { token: string; hash: string } {
+  const token = randomBytes(bytes).toString('base64url');
+  return { token, hash: hashOpaqueToken(token) };
 }
 
-export function hashRefreshToken(token: string): string {
+export function hashOpaqueToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
+
+export function createRefreshToken(): { token: string; hash: string } {
+  return createOpaqueToken(48);
+}
+
+export const hashRefreshToken = hashOpaqueToken;

@@ -2,9 +2,12 @@ import type { FastifyPluginAsync } from 'fastify';
 import {
   CATEGORIES,
   chooseUsernameSchema,
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   usernameSchema,
+  verifyEmailSchema,
 } from '@gambito/shared';
 import { prisma } from '../db.js';
 import { env } from '../env.js';
@@ -12,15 +15,42 @@ import { HttpError } from '../plugins/authenticate.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { issueSession, revokeSession, rotateSession, toSessionUser } from './session.js';
 import { verifyGoogleIdToken } from './google.js';
+import {
+  VIGENCIA_RECUPERACION_MS,
+  VIGENCIA_VERIFICACION_MS,
+  consumirEnlace,
+  emitirEnlace,
+} from './enlaces.js';
+import { mailer } from '../mail/mailer.js';
+import { correoDeRecuperacion, correoDeVerificacion } from '../mail/plantillas.js';
 
 const USER_SELECT = {
   id: true,
   username: true,
   email: true,
+  emailVerified: true,
   avatarUrl: true,
   country: true,
   role: true,
 } as const;
+
+/**
+ * Manda el correo de verificación sin dejar que un fallo del SMTP tumbe la
+ * operación que lo disparó: registrarse tiene que funcionar aunque el correo no
+ * salga. Queda en el log y la persona puede pedirlo de nuevo.
+ */
+async function mandarVerificacion(
+  app: { log: { error: (o: unknown, m: string) => void } },
+  userId: string,
+  email: string,
+): Promise<void> {
+  try {
+    const token = await emitirEnlace(userId, 'EMAIL_VERIFY', VIGENCIA_VERIFICACION_MS);
+    await mailer.enviar(correoDeVerificacion(email, token));
+  } catch (error) {
+    app.log.error({ err: error, userId }, 'no se pudo mandar el correo de verificación');
+  }
+}
 
 /** Toda cuenta arranca con las cuatro modalidades en 1500. */
 function initialRatings() {
@@ -67,6 +97,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         select: USER_SELECT,
       });
 
+      await mandarVerificacion(app, user.id, user.email);
       await issueSession(reply, user);
       return reply.code(201).send({ user: toSessionUser(user) });
     },
@@ -256,5 +287,100 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   }
 
   /** El front consulta esto para decidir si muestra el botón de Google. */
+  /* ---------------------------------------------------------------- */
+  /* Verificación de correo                                             */
+  /* ---------------------------------------------------------------- */
+
+  app.post('/auth/verify-email/send', {
+    config: { rateLimit: { max: env.RATE_LIMIT_RECOVERY_MAX, timeWindow: '1 hour' } },
+    onRequest: [app.requireAuth],
+    handler: async (request) => {
+      const cuenta = await prisma.user.findUniqueOrThrow({
+        where: { id: request.auth!.sub },
+        select: { id: true, email: true, emailVerified: true },
+      });
+      // Reenviar a una cuenta ya verificada sería regalar tokens válidos.
+      if (!cuenta.emailVerified) {
+        await mandarVerificacion(app, cuenta.id, cuenta.email);
+      }
+      return { ok: true };
+    },
+  });
+
+  app.post('/auth/verify-email', {
+    config: { rateLimit: { max: env.RATE_LIMIT_LOGIN_MAX, timeWindow: '15 minutes' } },
+    handler: async (request) => {
+      const { token } = verifyEmailSchema.parse(request.body);
+      const userId = await consumirEnlace(token, 'EMAIL_VERIFY');
+      if (!userId) {
+        throw new HttpError(400, 'BAD_TOKEN', 'El enlace no sirve o ya venció. Pedí uno nuevo.');
+      }
+      await prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+      return { ok: true };
+    },
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Recuperación de contraseña                                        */
+  /* ---------------------------------------------------------------- */
+
+  app.post('/auth/forgot-password', {
+    config: { rateLimit: { max: env.RATE_LIMIT_RECOVERY_MAX, timeWindow: '1 hour' } },
+    handler: async (request) => {
+      const { email } = forgotPasswordSchema.parse(request.body);
+
+      const cuenta = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, passwordHash: true, suspendedAt: true },
+      });
+
+      // Una cuenta sólo de Google no tiene contraseña que restablecer, y una
+      // suspendida no vuelve por esta puerta. En los tres casos la respuesta es
+      // la misma: si variara, este endpoint diría quién tiene cuenta acá.
+      if (cuenta && cuenta.passwordHash && !cuenta.suspendedAt) {
+        try {
+          const token = await emitirEnlace(cuenta.id, 'PASSWORD_RESET', VIGENCIA_RECUPERACION_MS);
+          await mailer.enviar(correoDeRecuperacion(cuenta.email, token));
+        } catch (error) {
+          app.log.error({ err: error, userId: cuenta.id }, 'no se pudo mandar la recuperación');
+        }
+      }
+
+      return { ok: true };
+    },
+  });
+
+  app.post('/auth/reset-password', {
+    config: { rateLimit: { max: env.RATE_LIMIT_LOGIN_MAX, timeWindow: '15 minutes' } },
+    handler: async (request, reply) => {
+      const input = resetPasswordSchema.parse(request.body);
+      const userId = await consumirEnlace(input.token, 'PASSWORD_RESET');
+      if (!userId) {
+        throw new HttpError(400, 'BAD_TOKEN', 'El enlace no sirve o ya venció. Pedí uno nuevo.');
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: await hashPassword(input.password),
+          // Llegó hasta acá desde ese correo: queda demostrado que es suyo.
+          emailVerified: true,
+        },
+        select: USER_SELECT,
+      });
+
+      // Cambiar la contraseña tiene que echar a quien estuviera dentro: si la
+      // recuperación fue porque alguien entró, dejarle la sesión abierta no
+      // arregla nada.
+      await prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+
+      await issueSession(reply, user);
+      return { user: toSessionUser(user) };
+    },
+  });
+
   app.get('/auth/providers', async () => ({ google: env.googleEnabled }));
 };

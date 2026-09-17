@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Field } from '@gambito/ui';
 import { ChessGame } from '@gambito/chess-core';
@@ -228,6 +228,16 @@ export function Entrar() {
             error={apiError?.fieldError('password') ?? (apiError?.code === 'BAD_CREDENTIALS' ? apiError.message : null)}
             onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
           />
+
+          {mode === 'login' ? (
+            <Link
+              to="/olvide"
+              className="-mt-1 self-end text-[13px]"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          ) : null}
 
           {error && !apiError?.fields && !['USERNAME_TAKEN', 'EMAIL_TAKEN', 'BAD_CREDENTIALS'].includes(apiError?.code ?? '') ? (
             <p className="m-0 text-[13px]" style={{ color: 'var(--danger)' }}>

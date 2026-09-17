@@ -122,9 +122,9 @@ acaba de mover quedó en jaque, algo imposible en el tablero, y esas posiciones 
 ## Verificar
 
 ```bash
-pnpm turbo run typecheck test          # 277 pruebas (necesita Postgres y Redis arriba)
+pnpm turbo run typecheck test          # 291 pruebas (necesita Postgres y Redis arriba)
 pnpm --filter @gambito/web exec playwright install chromium   # sólo la primera vez
-pnpm --filter @gambito/web e2e         # 33 pruebas en un navegador real
+pnpm --filter @gambito/web e2e         # 38 pruebas en un navegador real
 ```
 
 - `packages/chess-core` (144): enroque, al paso, coronación, mate, ahogado, triple
@@ -138,17 +138,19 @@ pnpm --filter @gambito/web e2e         # 33 pruebas en un navegador real
   simetría entre ganador y perdedor, y los topes de desviación.
 - `packages/ui` (38): contraste WCAG de cada combinación de texto y fondo que la interfaz
   pinta, en los dos temas, leyendo los colores del propio `tokens.css`.
-- `apps/api` (18): ciclo completo con dos sockets (emparejar → mate → guardado), rechazo de
+- `apps/api` (32): ciclo completo con dos sockets (emparejar → mate → guardado), rechazo de
   jugada ilegal con corrección del estado, abandono, colas separadas por control de tiempo,
   recuperación de una partida que quedó activa tras un reinicio, el movimiento de rating en
   partidas clasificatorias y amistosas, el avance automático de un torneo al cerrarse la
-  ronda, y la moderación con sus permisos.
-- `apps/web` (33): partida completa entre dos navegadores, Stockfish contestando de verdad,
+  ronda, la moderación con sus permisos, y el circuito de correo: verificación,
+  recuperación, enlaces vencidos, reusados y cruzados entre sí.
+- `apps/web` (38): partida completa entre dos navegadores, Stockfish contestando de verdad,
   pistas, deshacer, hándicap, perfil con aperturas deducidas del PGN, visor de análisis
   clasificando jugadas, lecciones resueltas sobre el tablero, puzzles resueltos y fallados
   calculando la solución con las reglas del juego, el ranking, un suizo de cuatro jugadores
   jugado de punta a punta, amigos y desafíos, espectar sin poder mover, el tablero recorrido
-  con el teclado y el panel de moderación. Las capturas quedan en `apps/web/e2e/recorrido/`.
+  con el teclado, el panel de moderación y la recuperación de contraseña leyendo el enlace
+  del correo. Las capturas quedan en `apps/web/e2e/recorrido/`.
 
 Las pruebas de navegador crean varias cuentas seguidas, así que el `.env` local sube
 `RATE_LIMIT_REGISTER_MAX`. Los valores por defecto del código son los de producción.
@@ -171,6 +173,30 @@ entra como candidato.
 En los colores manda la regla FIDE: cuando los dos prefieren lo mismo, la preferencia se le
 concede **al mejor clasificado**. Tenerlo al revés era lo que le daba tres blancas seguidas
 al puntero.
+
+## Correo: verificación y recuperación
+
+Al darse de alta con correo sale un mensaje de confirmación, y hay recuperación de
+contraseña desde `/olvide`. Los dos enlaces son tokens opacos de un solo uso: se guarda el
+hash y nunca el token, emitir uno anula el anterior del mismo tipo, y consumirlo es atómico
+(`updateMany` sobre `usedAt: null`), así dos clics seguidos no lo gastan dos veces. El de
+confirmación vale 24 horas; el de recuperación, una.
+
+Restablecer la contraseña **revoca todas las sesiones abiertas**. Si alguien pidió
+recuperarla justamente porque se le metieron en la cuenta, dejarle la sesión al intruso no
+arreglaría nada. También da el correo por verificado: llegar hasta ahí ya demuestra que la
+dirección es suya.
+
+`/auth/forgot-password` contesta lo mismo exista o no la cuenta, esté suspendida, o sea una
+cuenta de sólo Google sin contraseña que restablecer. Si la respuesta variara, ese endpoint
+sería un buscador de quién está registrado acá. La pantalla dice lo mismo por la misma razón.
+
+Sin `SMTP_URL` el correo no se manda: se escribe una línea JSON por mensaje en `MAIL_OUTBOX`
+(`.mail/outbox.jsonl` por defecto) y el enlace sale por consola. Eso permite levantar el
+proyecto y recuperar una contraseña sin montar un servidor de correo, y es de donde leen el
+enlace las pruebas — el token que abren es el que viajó en el mensaje, no uno de laboratorio.
+En producción `SMTP_URL` es obligatoria y la app no arranca sin ella, porque una recuperación
+que escribe en un archivo del servidor no recupera nada.
 
 ## Moderación
 
@@ -212,6 +238,13 @@ casilla clara no es su relleno —1,26:1— sino su contorno oscuro, que da 10:1
 ## Lo que todavía no está
 
 Las cuatro fases del plan están terminadas. Lo que queda son límites conocidos, no fases.
+
+No hay archivo de licencia. Stockfish es GPLv3 y viaja al navegador de cada visitante, así
+que publicar el proyecto obliga a decidir bajo qué licencia sale; mientras el repositorio sea
+privado la cuestión no aprieta.
+
+Tampoco hay nada para desplegar: `infra/` levanta Postgres y Redis para desarrollo, pero no
+hay Dockerfile de la API ni del front ni configuración de producción.
 
 La moderación no tiene cola de denuncias: no hay forma de que alguien reporte una partida o
 un mensaje, así que el panel sólo permite buscar y suspender. Un botón de denuncia en la

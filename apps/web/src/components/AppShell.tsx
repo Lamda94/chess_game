@@ -5,6 +5,7 @@ import { useSession } from '../state/session.js';
 import { useSocket } from '../state/socket.js';
 import { useTheme } from '../state/theme.js';
 import { Logo } from './Logo.js';
+import { AvisoCorreo } from './AvisoCorreo.js';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useSession();
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <>
+      <AvisoCorreo />
       <header
         className="flex h-[68px] shrink-0 items-center gap-6 px-5 sm:px-10"
         style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}

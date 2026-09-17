@@ -27,6 +27,15 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
   /**
+   * Correo. Sin `SMTP_URL` los mensajes se escriben en `MAIL_OUTBOX` en vez de
+   * mandarse, lo que alcanza para desarrollo y para las pruebas. En producción
+   * es obligatoria: sin ella nadie podría recuperar su contraseña.
+   */
+  SMTP_URL: z.string().optional(),
+  MAIL_FROM: z.string().default('Gambito <no-responder@gambito.local>'),
+  MAIL_OUTBOX: z.string().default('.mail/outbox.jsonl'),
+
+  /**
    * Límites por IP. Los valores por defecto son los de producción; en desarrollo
    * y en las pruebas de punta a punta se suben a propósito desde el .env, porque
    * ahí se crean decenas de cuentas por hora. Se configuran, no se desactivan.
@@ -34,6 +43,8 @@ const schema = z.object({
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_REGISTER_MAX: z.coerce.number().int().positive().default(10),
   RATE_LIMIT_LOGIN_MAX: z.coerce.number().int().positive().default(20),
+  /** Pedidos de recuperación: bajo a propósito, es el que más se abusa. */
+  RATE_LIMIT_RECOVERY_MAX: z.coerce.number().int().positive().default(5),
 });
 
 export type Env = z.infer<typeof schema> & { googleEnabled: boolean };
@@ -54,6 +65,11 @@ function load(): Env {
     }
     if (value.COOKIE_SECRET.startsWith('cambiar-esto')) {
       throw new Error('COOKIE_SECRET sigue siendo el de ejemplo.');
+    }
+    if (!value.SMTP_URL) {
+      throw new Error(
+        'Falta SMTP_URL. Sin correo saliente nadie puede verificar su cuenta ni recuperar su contraseña.',
+      );
     }
   }
   return { ...value, googleEnabled };
