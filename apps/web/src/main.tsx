@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.js';
 import { SessionProvider } from './state/session.js';
 import { ThemeProvider } from './state/theme.js';
+import { ApparienceProvider } from './state/apariencia.js';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <ThemeProvider>
           <SessionProvider>
-            <App />
+            <ApparienceProvider>
+              <App />
+            </ApparienceProvider>
           </SessionProvider>
         </ThemeProvider>
       </BrowserRouter>

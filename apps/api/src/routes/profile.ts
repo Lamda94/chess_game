@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { identifyOpening, sanMovesFromPgn } from '@gambito/chess-core';
-import { CATEGORIES, PROVISIONAL_GAMES, type Category } from '@gambito/shared';
+import { CATEGORIES, PROVISIONAL_GAMES, apparienceSchema, type Category } from '@gambito/shared';
 import { prisma } from '../db.js';
 import { HttpError } from '../plugins/authenticate.js';
+import { toSessionUser } from '../auth/session.js';
 
 /** Cuántos días hacia atrás cubre el mapa de actividad. */
 const ACTIVITY_DAYS = 126;
@@ -16,6 +17,41 @@ export interface RatingPoint {
 }
 
 export const profileRoutes: FastifyPluginAsync = async (app) => {
+  /**
+   * Apariencia del tablero. Es una preferencia de la cuenta, no del navegador:
+   * quien juega desde el teléfono y desde la computadora espera ver lo mismo.
+   */
+  app.patch('/profile/appearance', {
+    onRequest: [app.requireAuth],
+    handler: async (request) => {
+      const cambios = apparienceSchema.parse(request.body);
+      if (cambios.pieceSet === undefined && cambios.boardTheme === undefined) {
+        throw new HttpError(400, 'NOTHING_TO_UPDATE', 'No mandaste ningún cambio.');
+      }
+
+      const user = await prisma.user.update({
+        where: { id: request.auth!.sub },
+        data: {
+          ...(cambios.pieceSet !== undefined ? { pieceSet: cambios.pieceSet } : {}),
+          ...(cambios.boardTheme !== undefined ? { boardTheme: cambios.boardTheme } : {}),
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          emailVerified: true,
+          avatarUrl: true,
+          country: true,
+          role: true,
+          pieceSet: true,
+          boardTheme: true,
+        },
+      });
+
+      return { user: toSessionUser(user) };
+    },
+  });
+
   app.get('/users/:username/profile', async (request) => {
     const { username } = request.params as { username: string };
     const { category } = request.query as { category?: string };

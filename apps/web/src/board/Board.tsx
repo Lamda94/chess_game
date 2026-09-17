@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { FILES, RANKS, isLightSquare, type PieceType, type Square } from '@gambito/chess-core';
 import type { Color } from '@gambito/shared';
 import { Piece, pieceName } from './pieces.js';
+import { useApariencia } from '../state/apariencia.js';
 import type { GameBoard } from './useGameBoard.js';
 import './board.css';
 
@@ -32,6 +33,7 @@ export function Board({
 }: BoardProps) {
   const [dragging, setDragging] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const { pieceSet } = useApariencia();
 
   /**
    * Navegación por teclado. Cada casilla ya es un botón, así que el tabulador
@@ -151,7 +153,7 @@ export function Board({
                       }}
                       onDragEnd={() => setDragging(null)}
                     >
-                      <Piece type={piece.type} color={piece.color} />
+                      <Piece type={piece.type} color={piece.color} set={pieceSet} />
                     </span>
                   ) : null}
                 </button>
@@ -176,7 +178,7 @@ export function Board({
                   onClick={() => board.resolvePromotion(choice)}
                   aria-label={pieceName(choice, board.turn)}
                 >
-                  <Piece type={choice} color={board.turn} size={52} />
+                  <Piece type={choice} color={board.turn} size={52} set={pieceSet} />
                 </button>
               ))}
             </div>

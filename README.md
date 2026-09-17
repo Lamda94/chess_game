@@ -124,7 +124,7 @@ acaba de mover quedó en jaque, algo imposible en el tablero, y esas posiciones 
 ```bash
 pnpm turbo run typecheck test          # 291 pruebas (necesita Postgres y Redis arriba)
 pnpm --filter @gambito/web exec playwright install chromium   # sólo la primera vez
-pnpm --filter @gambito/web e2e         # 38 pruebas en un navegador real
+pnpm --filter @gambito/web e2e         # 44 pruebas en un navegador real
 ```
 
 - `packages/chess-core` (144): enroque, al paso, coronación, mate, ahogado, triple
@@ -144,13 +144,14 @@ pnpm --filter @gambito/web e2e         # 38 pruebas en un navegador real
   partidas clasificatorias y amistosas, el avance automático de un torneo al cerrarse la
   ronda, la moderación con sus permisos, y el circuito de correo: verificación,
   recuperación, enlaces vencidos, reusados y cruzados entre sí.
-- `apps/web` (38): partida completa entre dos navegadores, Stockfish contestando de verdad,
+- `apps/web` (44): partida completa entre dos navegadores, Stockfish contestando de verdad,
   pistas, deshacer, hándicap, perfil con aperturas deducidas del PGN, visor de análisis
   clasificando jugadas, lecciones resueltas sobre el tablero, puzzles resueltos y fallados
   calculando la solución con las reglas del juego, el ranking, un suizo de cuatro jugadores
   jugado de punta a punta, amigos y desafíos, espectar sin poder mover, el tablero recorrido
   con el teclado, el panel de moderación y la recuperación de contraseña leyendo el enlace
-  del correo. Las capturas quedan en `apps/web/e2e/recorrido/`.
+  del correo, la apariencia guardada en la cuenta y un desafío jugado con el tiempo y
+  el color elegidos. Las capturas quedan en `apps/web/e2e/recorrido/`.
 
 Las pruebas de navegador crean varias cuentas seguidas, así que el `.env` local sube
 `RATE_LIMIT_REGISTER_MAX`. Los valores por defecto del código son los de producción.
@@ -217,6 +218,27 @@ marca a mano:
 ```sql
 UPDATE "User" SET role = 'MODERATOR' WHERE "usernameLower" = 'nombre';
 ```
+
+## Personalización del tablero
+
+Cuatro juegos de piezas y cinco temas de tablero, en `/apariencia`. La elección
+se guarda en la **cuenta** y no en el navegador: quien juega desde el teléfono y
+desde la computadora espera ver sus mismas piezas.
+
+Los juegos no son cinco dibujos distintos. Tres comparten la geometría Staunton y
+cambian cómo se pinta —relleno, trazo y grosor—: *Clásicas*, *Contorno* (las
+blancas quedan huecas y dejan ver la casilla) y *Nítidas* (trazo grueso, con
+reborde claro en las negras para que no se empasten sobre casilla oscura).
+*Minimal* sí es otra geometría, construida con primitivas.
+
+Los temas son sólo cinco colores que se aplican como variables CSS sobre `<html>`,
+que es de donde el tablero ya los leía. Por eso el cambio alcanza de una vez al
+tablero, al visor de análisis, a las lecciones y a los puzzles sin tocar ninguno.
+Agregar un juego o un tema es sumar una entrada en `packages/shared/src/apariencia.ts`.
+
+El catálogo dibuja cada opción con sus propias piezas y colores, alternando
+casilla clara y oscura: elegir por el nombre sería adivinar, y una pieza puede
+verse bien en una casilla y perderse en la otra.
 
 ## Accesibilidad
 

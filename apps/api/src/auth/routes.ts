@@ -32,6 +32,8 @@ const USER_SELECT = {
   avatarUrl: true,
   country: true,
   role: true,
+  pieceSet: true,
+  boardTheme: true,
 } as const;
 
 /**

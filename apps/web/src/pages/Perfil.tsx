@@ -79,6 +79,12 @@ export function Perfil() {
       {/* Cabecera */}
       <section className="gb-card flex flex-wrap items-center gap-6">
         <Avatar username={perfil.user.username} url={perfil.user.avatarUrl} size={88} status="online" />
+        {/* Los ajustes de tablero sólo tienen sentido en el perfil propio. */}
+        {user?.username === perfil.user.username ? (
+          <Link to="/apariencia" className="gb-btn gb-btn--secondary order-last ml-auto">
+            Personalizar tablero
+          </Link>
+        ) : null}
         <div className="flex flex-1 flex-col gap-1.5">
           <h1 className="gb-display m-0 text-[36px] leading-none">{perfil.user.username}</h1>
           <div className="flex flex-wrap items-center gap-3 text-[13px]" style={{ color: 'var(--text-muted)' }}>

@@ -1,5 +1,12 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { SessionUser } from '@gambito/shared';
+import {
+  APARIENCIA_POR_DEFECTO,
+  BOARD_THEMES,
+  PIECE_SETS,
+  type BoardTheme,
+  type PieceSet,
+  type SessionUser,
+} from '@gambito/shared';
 import { prisma } from '../db.js';
 import { isProd } from '../env.js';
 import {
@@ -36,6 +43,8 @@ export interface DbUser {
   avatarUrl: string | null;
   country: string | null;
   role: SessionUser['role'];
+  pieceSet: string;
+  boardTheme: string;
 }
 
 export function toSessionUser(user: DbUser): SessionUser {
@@ -47,6 +56,14 @@ export function toSessionUser(user: DbUser): SessionUser {
     avatarUrl: user.avatarUrl,
     country: user.country,
     role: user.role,
+    // La base guarda texto suelto; acá se valida contra el catálogo y se cae al
+    // predeterminado si alguna vez queda un valor viejo de un set retirado.
+    pieceSet: PIECE_SETS.includes(user.pieceSet as PieceSet)
+      ? (user.pieceSet as PieceSet)
+      : APARIENCIA_POR_DEFECTO.pieceSet,
+    boardTheme: BOARD_THEMES.includes(user.boardTheme as BoardTheme)
+      ? (user.boardTheme as BoardTheme)
+      : APARIENCIA_POR_DEFECTO.boardTheme,
     needsUsername: user.username === null,
   };
 }

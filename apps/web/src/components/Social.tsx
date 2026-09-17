@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar, Button } from '@gambito/ui';
 import { formatTimeControl } from '@gambito/shared';
 import { ApiError, api, get, post } from '../api/client.js';
+import { OpcionesDesafio, useOpcionesDesafio } from './OpcionesDesafio.js';
 
 interface Amigo {
   id: string;
@@ -24,6 +25,7 @@ interface Desafio {
 
 /** Amigos y pedidos pendientes. */
 export function PanelAmigos() {
+  const [opciones, setOpciones] = useOpcionesDesafio();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [nombre, setNombre] = useState('');
@@ -62,11 +64,13 @@ export function PanelAmigos() {
 
   const desafiar = useMutation({
     mutationFn: (username: string) =>
-      post<{ desafio: { id: string } }>('/challenges', {
-        username,
-        timeControl: { initialSec: 180, incrementSec: 2 },
-        rated: true,
-      }),
+      post<{ desafio: { id: string } }>('/challenges', { username, ...opciones }),
+    onSuccess: ({ desafio }) => navigate(`/desafio/${desafio.id}`),
+  });
+
+  /** Sin destinatario: lo toma quien abra el enlace. */
+  const desafioAbierto = useMutation({
+    mutationFn: () => post<{ desafio: { id: string } }>('/challenges', opciones),
     onSuccess: ({ desafio }) => navigate(`/desafio/${desafio.id}`),
   });
 
@@ -104,6 +108,16 @@ export function PanelAmigos() {
       {error ? (
         <span className="text-[12px]" style={{ color: 'var(--danger)' }}>{error}</span>
       ) : null}
+
+      <div
+        className="flex flex-col gap-2.5 rounded-xl p-3"
+        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+      >
+        <OpcionesDesafio opciones={opciones} onChange={setOpciones} />
+        <Button block disabled={desafioAbierto.isPending} onClick={() => desafioAbierto.mutate()}>
+          Crear desafío por enlace
+        </Button>
+      </div>
 
       {datos?.pendientes.length ? (
         <div className="flex flex-col gap-2">

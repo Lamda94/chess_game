@@ -1,4 +1,4 @@
-import type { Color } from '@gambito/shared';
+import { APARIENCIA_POR_DEFECTO, type Color, type PieceSet } from '@gambito/shared';
 import type { PieceType } from '@gambito/chess-core';
 
 /**
@@ -8,6 +8,80 @@ import type { PieceType } from '@gambito/chess-core';
  */
 
 const BODY = { strokeLinejoin: 'round', strokeLinecap: 'round' } as const;
+
+/**
+ * Geometría alternativa: figuras construidas con primitivas, sin los detalles
+ * del Staunton. No es el mismo dibujo con otro color — son otras siluetas.
+ */
+function pathsMinimal(type: PieceType): string[] {
+  const base = 'M11.5 34h22v4h-22z';
+  switch (type) {
+    case 'p':
+      return ['M22.5 9a6 6 0 1 1 0 12 6 6 0 0 1 0-12z', 'M16.5 21.5h12l3 12.5H13.5z', base];
+    case 'r':
+      return ['M12 9h5v4h4V9h3v4h4V9h5v9H12z', 'M15 18h15l2 16H13z', base];
+    case 'n':
+      // Silueta de cabeza de caballo mirando a la izquierda: oreja, frente,
+      // hocico y cuello. El primer intento salió un borrón sin rasgos.
+      return [
+        'M28.8 6.5 32.6 15v19H13.4v-5.2c0-4.2 1.6-7.6 4.6-10.3L12.2 20l1.6-4.6 5.6-2.2-1.3-3.4z',
+        base,
+      ];
+    case 'b':
+      return ['M22.5 5.2a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8z', 'M22.5 10l8.5 15a8.5 8.5 0 0 1-17 0z', 'M15 30h15v4H15z', base];
+    case 'q':
+      return ['M9 12.5v21.5h27V12.5l-4.6 8.2-4.4-9.2-4.5 9.2-4.5-9.2-4.4 9.2z', base];
+    case 'k':
+      return ['M21 5h3v4h4v3h-4v4h-3v-4h-4V9h4z', 'M13.5 34c0-9 4-14 9-14s9 5 9 14z', base];
+  }
+}
+
+/**
+ * Cada juego es una forma de pintar, no un dibujo aparte: el relleno, el trazo
+ * y su grosor. Agregar uno es sumar una entrada acá.
+ */
+interface Estilo {
+  geometria: 'staunton' | 'minimal';
+  fill: (color: Color) => string;
+  stroke: (color: Color) => string;
+  grosor: number;
+  sombra: boolean;
+}
+
+const ESTILOS: Record<PieceSet, Estilo> = {
+  clasicas: {
+    geometria: 'staunton',
+    fill: (c) => (c === 'white' ? 'var(--piece-white)' : 'var(--piece-black)'),
+    stroke: (c) => (c === 'white' ? '#2a2a2a' : '#000000'),
+    grosor: 1.4,
+    sombra: true,
+  },
+  contorno: {
+    // Las blancas quedan huecas y dejan ver la casilla; su contorno oscuro es lo
+    // que las recorta, así que se lee igual sobre casilla clara y oscura.
+    geometria: 'staunton',
+    fill: (c) => (c === 'white' ? 'none' : 'var(--piece-black)'),
+    stroke: () => '#1d1f24',
+    grosor: 1.9,
+    sombra: false,
+  },
+  nitidas: {
+    // Trazo grueso y un reborde claro en las negras, para que no se empasten
+    // contra la casilla oscura en pantallas chicas.
+    geometria: 'staunton',
+    fill: (c) => (c === 'white' ? '#ffffff' : '#14161a'),
+    stroke: (c) => (c === 'white' ? '#14161a' : '#efe9dc'),
+    grosor: 2.4,
+    sombra: true,
+  },
+  minimal: {
+    geometria: 'minimal',
+    fill: (c) => (c === 'white' ? 'var(--piece-white)' : 'var(--piece-black)'),
+    stroke: (c) => (c === 'white' ? '#33302b' : '#000000'),
+    grosor: 1.2,
+    sombra: false,
+  },
+};
 
 function paths(type: PieceType): string[] {
   switch (type) {
@@ -53,21 +127,27 @@ export interface PieceProps {
   color: Color;
   /** Lado en px. Si se omite, la pieza llena el contenedor. */
   size?: number | string;
+  /** Juego de piezas. Por defecto, el clásico. */
+  set?: PieceSet;
 }
 
-export function Piece({ type, color, size = '100%' }: PieceProps) {
-  const fill = color === 'white' ? 'var(--piece-white)' : 'var(--piece-black)';
-  const stroke = color === 'white' ? '#2a2a2a' : '#000000';
+export function Piece({ type, color, size = '100%', set = APARIENCIA_POR_DEFECTO.pieceSet }: PieceProps) {
+  const estilo = ESTILOS[set] ?? ESTILOS[APARIENCIA_POR_DEFECTO.pieceSet];
+  const dibujos = estilo.geometria === 'minimal' ? pathsMinimal(type) : paths(type);
   return (
     <svg
       viewBox="0 0 45 45"
       width={size}
       height={size}
       aria-hidden="true"
-      style={{ display: 'block', pointerEvents: 'none', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.35))' }}
+      style={{
+        display: 'block',
+        pointerEvents: 'none',
+        ...(estilo.sombra ? { filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.35))' } : {}),
+      }}
     >
-      <g fill={fill} stroke={stroke} strokeWidth={1.4} {...BODY}>
-        {paths(type).map((d, index) => (
+      <g fill={estilo.fill(color)} stroke={estilo.stroke(color)} strokeWidth={estilo.grosor} {...BODY}>
+        {dibujos.map((d, index) => (
           <path key={index} d={d} />
         ))}
       </g>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { BoardTheme, PieceSet } from './apariencia.js';
 
 /**
  * El nombre de jugador es lo único público de una cuenta: aparece en el ranking,
@@ -76,6 +77,9 @@ export interface SessionUser {
   role: Role;
   /** Falso hasta que se abre el enlace del correo de alta. */
   emailVerified: boolean;
+  /** Preferencias de tablero, para que acompañen a la cuenta y no al navegador. */
+  pieceSet: PieceSet;
+  boardTheme: BoardTheme;
   /** true mientras el alta por OAuth no eligió nombre de jugador. */
   needsUsername: boolean;
 }

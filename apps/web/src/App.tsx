@@ -18,6 +18,7 @@ import { TorneoCrear } from './pages/TorneoCrear.js';
 import { TorneoSala } from './pages/TorneoSala.js';
 import { Desafio } from './pages/Desafio.js';
 import { Moderacion } from './pages/Moderacion.js';
+import { Apariencia } from './pages/Apariencia.js';
 import { Olvide } from './pages/Olvide.js';
 import { Restablecer } from './pages/Restablecer.js';
 import { Verificar } from './pages/Verificar.js';
@@ -63,6 +64,7 @@ export function App() {
         <Route path="/" element={<Privado><Lobby /></Privado>} />
         <Route path="/buscar" element={<Privado><Buscar /></Privado>} />
         <Route path="/moderacion" element={<Privado><Moderacion /></Privado>} />
+        <Route path="/apariencia" element={<Privado><Apariencia /></Privado>} />
         <Route
           path="/practica"
           element={

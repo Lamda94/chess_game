@@ -89,6 +89,10 @@ model User {
   bio           String?
   country       String?
   role          Role      @default(PLAYER)
+  /// Personalización del tablero. Van en la cuenta y no en el navegador para que
+  /// acompañen a la persona de un dispositivo a otro.
+  pieceSet      String    @default("clasicas")
+  boardTheme    String    @default("madera")
   /// Cuenta suspendida por moderación: no puede entrar ni jugar.
   suspendedAt   DateTime?
   suspendedFor  String?
