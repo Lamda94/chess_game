@@ -48,7 +48,11 @@ services:
       HOST: 0.0.0.0
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       REDIS_URL: redis://redis:6379
-      WEB_ORIGIN: https://${GAMBITO_DOMAIN}
+      # Normalmente se deduce del dominio, pero detrás de otro proxy GAMBITO_DOMAIN
+      # es la dirección de escucha de Caddy (`:80`) y no la pública: ahí hay que
+      # dar WEB_ORIGIN aparte. Lo usan los enlaces de los correos, el callback de
+      # Google y la cabecera CORS.
+      WEB_ORIGIN: ${WEB_ORIGIN:-https://${GAMBITO_DOMAIN}}
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

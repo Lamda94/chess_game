@@ -1,0 +1,18 @@
+# Variante para un servidor donde OTRO proxy ya tiene el 80 y el 443 — por
+# ejemplo un VPS que ya aloja otros sitios detrás de un nginx compartido.
+#
+# Se aplica encima del de producción:
+#
+#   docker compose -f infra/docker-compose.prod.yml \
+#                  -f infra/docker-compose.proxy.yml \
+#                  --env-file infra/.env.prod up -d --build
+#
+# Caddy deja de pedir certificados y de ocupar los puertos públicos: escucha en
+# el 80 del contenedor, publicado sólo en 127.0.0.1, y el proxy de delante es el
+# que termina el TLS. El Caddyfile no cambia — alcanza con que GAMBITO_DOMAIN
+# valga `:80`, que para Caddy significa "servir por HTTP sin TLS". El dominio
+# público se pasa entonces en WEB_ORIGIN.
+services:
+  web:
+    ports: !override
+      - '127.0.0.1:${GAMBITO_PUERTO_INTERNO:-3002}:80'
