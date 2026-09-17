@@ -1,0 +1,23 @@
+@import '@gambito/ui/tokens.css';
+@import '@gambito/ui/components.css';
+@import 'tailwindcss';
+
+/* Tailwind se usa sólo para el armado (flex, grid, espaciado). El color y la
+   tipografía salen siempre de los tokens, para que el tema claro funcione solo. */
+@theme {
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-line: var(--border);
+  --color-ink: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+.gb-display { font-family: var(--font-display); font-weight: 600; }
+.gb-mono { font-family: var(--font-mono); }

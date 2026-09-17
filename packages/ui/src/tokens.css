@@ -1,0 +1,106 @@
+/* Sistema de diseño Gambito — "mármol y ámbar". Tokens validados en la maqueta de Fase 0. */
+
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,700;1,6..96,400&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --font-display: 'Bodoni Moda', Georgia, serif;
+  --font-ui: 'Sora', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --shadow-elevated: 0 24px 48px rgba(0, 0, 0, 0.35);
+
+  /* El tablero no cambia entre temas: la madera es la madera. */
+  --board-light: #e6d9be;
+  --board-dark: #6e5c45;
+  --board-highlight-light: #c9b96e;
+  --board-highlight-dark: #9b8747;
+  --board-check: #c4685e;
+  --piece-white: #f8f3e6;
+  --piece-black: #1b1e23;
+
+  color-scheme: dark;
+  --bg-base: #0a0c0f;
+  --bg-surface: #12151a;
+  --bg-elevated: #1a1e25;
+  --border: #272c35;
+  --border-strong: #3a414d;
+  --text-primary: #eceef2;
+  --text-muted: #8b94a3;
+  --accent: #d9a441;
+  --accent-soft: #f0c976;
+  --accent-ink: #10130f;
+  --accent-wash: #221b0e;
+  --accent-wash-border: #4a3a16;
+  --cool: #5b8def;
+  --cool-wash: #121b2c;
+  --cool-wash-border: #22355a;
+  --success: #46a97b;
+  --danger: #df5a5a;
+  --danger-wash: #251517;
+  --danger-wash-border: #5e2b2b;
+  /* Serie ámbar para mapas de calor y barras. */
+  --chart-amber: #b8862e;
+  --chart-cool: #5b8def;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-base: #f6f3ec;
+  --bg-surface: #ffffff;
+  --bg-elevated: #fbf8f1;
+  --border: #e2dcd0;
+  --border-strong: #d6cebe;
+  --text-primary: #16181c;
+  --text-muted: #5f6874;
+  --accent: #d9a441;
+  --accent-soft: #8f6412;
+  --accent-ink: #16181c;
+  --accent-wash: #fbf2de;
+  --accent-wash-border: #c9a961;
+  --cool: #2c5bc4;
+  --cool-wash: #eef3fd;
+  --cool-wash-border: #c3d4f5;
+  --success: #1f7a50;
+  --danger: #b03a3a;
+  --danger-wash: #fbeeee;
+  --danger-wash-border: #e3bdbd;
+  --shadow-elevated: 0 1px 2px rgba(22, 24, 28, 0.05);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* El foco de teclado tiene que verse: el tablero se juega sin mouse. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

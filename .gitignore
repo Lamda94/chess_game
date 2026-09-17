@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+playwright-report/
+test-results/
+
+apps/web/e2e/capturas/
+apps/web/e2e/recorrido/
+apps/web/test-results/
+
+# Estado de sesión del harness, no del proyecto
+.claude/handoff*.md

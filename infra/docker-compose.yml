@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gambito-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gambito
+      POSTGRES_PASSWORD: gambito
+      POSTGRES_DB: gambito
+    ports:
+      - "5433:5432"
+    volumes:
+      - gambito-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gambito -d gambito"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: gambito-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - gambito-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  gambito-pg:
+  gambito-redis:

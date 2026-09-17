@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  MODERATOR
+  ADMIN
+}
+
+enum Category {
+  BULLET
+  BLITZ
+  RAPID
+  CLASSICAL
+}
+
+enum GameStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+enum GameResult {
+  WHITE
+  BLACK
+  DRAW
+}
+
+enum Termination {
+  CHECKMATE
+  RESIGNATION
+  TIMEOUT
+  STALEMATE
+  AGREEMENT
+  THREEFOLD
+  FIFTY_MOVE
+  INSUFFICIENT_MATERIAL
+  ABANDONED
+}
+
+enum OAuthProvider {
+  GOOGLE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  /// Único dato público de la cuenta. Nulo hasta que un alta por OAuth lo elige.
+  username      String?   @unique
+  /// Copia en minúsculas para reservar el nombre sin importar cómo se escriba.
+  usernameLower String?   @unique
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  /// Nulo en las cuentas que sólo entran por OAuth.
+  passwordHash  String?
+  avatarUrl     String?
+  bio           String?
+  country       String?
+  role          Role      @default(PLAYER)
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+
+  ratings        Rating[]
+  oauthAccounts  OAuthAccount[]
+  refreshTokens  RefreshToken[]
+  gamesAsWhite   Game[]         @relation("WhitePlayer")
+  gamesAsBlack   Game[]         @relation("BlackPlayer")
+  chatMessages   ChatMessage[]
+
+  @@index([lastSeenAt])
+}
+
+model OAuthAccount {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          OAuthProvider
+  providerAccountId String
+  email             String
+  avatarUrl         String?
+  createdAt         DateTime      @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Sólo se guarda el hash: un volcado de la tabla no permite robar sesiones.
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  /// Apunta al token que lo reemplazó, para detectar reuso de un token rotado.
+  replacedById String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Rating {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category
+  rating      Int      @default(1500)
+  rd          Float    @default(350)
+  volatility  Float    @default(0.06)
+  peak        Int      @default(1500)
+  gamesPlayed Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, category])
+  @@index([category, rating])
+}
+
+model Game {
+  id           String      @id @default(cuid())
+  whiteId      String
+  white        User        @relation("WhitePlayer", fields: [whiteId], references: [id])
+  blackId      String
+  black        User        @relation("BlackPlayer", fields: [blackId], references: [id])
+  category     Category
+  initialSec   Int
+  incrementSec Int
+  rated        Boolean     @default(true)
+  status       GameStatus  @default(ACTIVE)
+  pgn          String      @default("")
+  finalFen     String?
+  result       GameResult?
+  termination  Termination?
+
+  whiteRatingBefore Int?
+  blackRatingBefore Int?
+  whiteRatingAfter  Int?
+  blackRatingAfter  Int?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  moves    Move[]
+  messages ChatMessage[]
+
+  @@index([whiteId, startedAt])
+  @@index([blackId, startedAt])
+  @@index([status])
+}
+
+model Move {
+  id              String  @id @default(cuid())
+  gameId          String
+  game            Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// Medio-jugada, empezando en 1.
+  ply             Int
+  san             String
+  uci             String
+  fenAfter        String
+  /// Reloj del jugador que movió, ya con el incremento sumado.
+  clockMsAfter    Int
+  evalCp          Int?
+
+  @@unique([gameId, ply])
+  @@index([gameId])
+}
+
+model ChatMessage {
+  id     String   @id @default(cuid())
+  gameId String
+  game   Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body   String
+  at     DateTime @default(now())
+
+  @@index([gameId, at])
+}
