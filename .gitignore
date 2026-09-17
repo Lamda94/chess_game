@@ -26,3 +26,7 @@ apps/web/public/engine/
 
 # Variables reales del despliegue.
 infra/.env.prod
+
+# Credenciales del túnel: nunca se versionan.
+cloudflared/*.json
+cloudflared/config.yml

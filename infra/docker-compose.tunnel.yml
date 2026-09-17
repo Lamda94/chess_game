@@ -1,0 +1,40 @@
+# Salida a internet por un túnel de Cloudflare, sin abrir puertos en el servidor.
+#
+#   docker compose -f infra/docker-compose.prod.yml \
+#                  -f infra/docker-compose.tunnel.yml \
+#                  --env-file infra/.env.prod up -d --build
+#
+# Es la variante para un servidor que ya aloja otros sitios: no toca el 80 ni el
+# 443, así que el proxy que esté delante sigue como está. Cloudflare termina el
+# TLS, de modo que Caddy queda sirviendo por HTTP puertas adentro — para eso
+# GAMBITO_DOMAIN vale `:80`, y el dominio público se pasa en WEB_ORIGIN.
+#
+# Antes hay que dejar en `cloudflared/` el `config.yml` y el `credentials.json`
+# del túnel. El ingress apunta al contenedor `web`, no a la API: Caddy es el que
+# reparte entre los archivos estáticos, /api y /socket.io.
+#
+#   tunnel: <id>
+#   credentials-file: /etc/cloudflared/credentials.json
+#   ingress:
+#     - hostname: tu-dominio
+#       service: http://web:80
+#     - service: http_status:404
+services:
+  web:
+    # Nada hacia afuera: el único camino es el túnel. El puerto de loopback
+    # queda para poder diagnosticar desde el propio servidor.
+    ports: !override
+      - '127.0.0.1:${GAMBITO_PUERTO_INTERNO:-3002}:80'
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # root para poder leer el credentials.json en modo 600.
+    user: root
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ../cloudflared:/etc/cloudflared:ro
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      web: { condition: service_started }
