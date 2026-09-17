@@ -96,13 +96,41 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid var(--border);
+  /* Para que el tamaño del tiempo dependa del ancho de ESTE recuadro y no del
+     de la ventana: en el teléfono el reloj mide 150px y en escritorio el doble. */
+  container-type: inline-size;
+  overflow: hidden;
 }
-.gb-clock__time { font-family: var(--font-mono); font-size: 30px; font-weight: 700; color: var(--text-muted); }
+/* La etiqueta cede espacio; el tiempo no se toca. `min-width: 0` es lo que
+   permite que un texto flex se encoja por debajo de su contenido. */
+.gb-clock__label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/*
+ * El tiempo nunca se parte ni se recorta: es el dato crítico de la pantalla.
+ * Antes era 30px fijos y con la etiqueta "Juega" al lado no entraba en el
+ * recuadro del teléfono — el último dígito quedaba cortado contra el borde.
+ * Ahora se escala con el ancho del recuadro, con un piso legible.
+ */
+.gb-clock__time {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: clamp(20px, 13cqi, 30px);
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  /* Dígitos de ancho fijo: si no, el reloj tiembla a cada décima. */
+  font-variant-numeric: tabular-nums;
+}
 .gb-clock--active { background: var(--accent-wash); border-color: var(--accent); }
 .gb-clock--active .gb-clock__time { color: var(--accent-soft); }
 .gb-clock--low .gb-clock__time { color: var(--danger); }

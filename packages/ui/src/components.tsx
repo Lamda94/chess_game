@@ -146,7 +146,9 @@ export function Clock({
   const low = ms < 10_000;
   return (
     <div className={cx('gb-clock', active && 'gb-clock--active', low && 'gb-clock--low')}>
-      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</span>
+      <span className="gb-clock__label" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+        {label}
+      </span>
       <span className="gb-clock__time" role="timer" aria-live="off">
         {formatClock(ms)}
       </span>

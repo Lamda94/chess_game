@@ -12,6 +12,7 @@ import {
   gameIdSchema,
   gameMoveSchema,
   gameRoom,
+  watchRoom,
   queueJoinSchema,
   categoryFor,
   tournamentIdSchema,
@@ -119,9 +120,21 @@ export function createSocketServer(httpServer: HttpServer): IO {
       const state = await gameEngine.stateOf(parsed.data.gameId);
       if (!state) return fail(socket, 'GAME_NOT_FOUND', 'Esa partida no existe.');
 
-      // Espectar es legítimo, pero sólo los jugadores entran a la sala para recibir
-      // el chat privado de la partida.
+      // Todos —jugadores y espectadores— entran a la sala pública, que es la que
+      // reparte las jugadas. A la privada, con el chat y las tablas, sólo los
+      // dos que juegan.
       const isPlayer = state.white.id === userId || state.black.id === userId;
+
+      // Al pasar de una partida a otra hay que soltar la anterior, o se seguirían
+      // recibiendo sus jugadas.
+      const anterior = socket.data.watching;
+      if (anterior && anterior !== state.id) {
+        void socket.leave(watchRoom(anterior));
+        void socket.leave(gameRoom(anterior));
+      }
+      socket.data.watching = state.id;
+
+      void socket.join(watchRoom(state.id));
       if (isPlayer) void socket.join(gameRoom(state.id));
       socket.emit('game:state', state);
     });
@@ -219,10 +232,10 @@ export function createSocketServer(httpServer: HttpServer): IO {
 
   gameEngine.setBroadcaster({
     moveApplied: (gameId, payload) => {
-      play.to(gameRoom(gameId)).emit('game:moveApplied', payload);
+      play.to(watchRoom(gameId)).emit('game:moveApplied', payload);
     },
     gameOver: (gameId, payload) => {
-      play.to(gameRoom(gameId)).emit('game:over', payload);
+      play.to(watchRoom(gameId)).emit('game:over', payload);
     },
     drawOffered: (gameId, from) => {
       play.to(gameRoom(gameId)).emit('game:drawOffered', { gameId, from });

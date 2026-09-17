@@ -119,10 +119,28 @@ export interface ServerToClientEvents {
 export interface SocketData {
   userId: string;
   username: string;
+  /** Partida que este socket está siguiendo, para soltarla al cambiar de una a otra. */
+  watching?: string;
 }
 
+/**
+ * Sala privada de la partida: sólo los dos jugadores. Por acá va el chat y las
+ * ofertas de tablas, que son cosa entre ellos.
+ */
 export function gameRoom(gameId: string): string {
   return `game:${gameId}`;
+}
+
+/**
+ * Sala pública: los jugadores y quien esté mirando. Por acá van las jugadas y el
+ * final de la partida.
+ *
+ * Están separadas porque antes había una sola y, para que el chat no se filtrara,
+ * el espectador no entraba a ninguna: veía la posición del momento en que abría
+ * la página y después nada: hacía falta recargar para enterarse de cada jugada.
+ */
+export function watchRoom(gameId: string): string {
+  return `watch:${gameId}`;
 }
 
 export function tournamentRoom(tournamentId: string): string {

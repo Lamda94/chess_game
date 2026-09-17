@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { colorDe, mover } from './ayudas.js';
 
 const TAG = Math.random().toString(36).slice(2, 7);
 const SHOTS = 'e2e/capturas';
@@ -13,22 +14,6 @@ async function registrar(page: Page, nombre: string): Promise<string> {
   await page.getByRole('button', { name: /Crear cuenta con correo|Crear cuenta$/ }).click();
   await expect(page.getByRole('heading', { name: new RegExp(`Buenas, ${usuario}`) })).toBeVisible();
   return usuario;
-}
-
-/** Pregunta al servidor de qué color juega esta pestaña. */
-async function colorDe(page: Page, gameId: string): Promise<'white' | 'black'> {
-  return page.evaluate(async (id) => {
-    const [yo, partida] = await Promise.all([
-      fetch('/api/auth/me').then((r) => r.json()),
-      fetch(`/api/games/${id}`).then((r) => r.json()),
-    ]);
-    return partida.game.white.id === yo.user.id ? 'white' : 'black';
-  }, gameId);
-}
-
-async function mover(page: Page, desde: string, hasta: string) {
-  await page.getByRole('gridcell', { name: new RegExp(`^${desde},`) }).click();
-  await page.getByRole('gridcell', { name: new RegExp(`^${hasta},`) }).click();
 }
 
 test('dos jugadores se emparejan y juegan una partida real', async ({ browser }) => {
@@ -129,4 +114,44 @@ test('el tema claro no rompe ninguna pantalla', async ({ page }) => {
 
   await alternar.click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('el reloj no se sale de su recuadro en ningún ancho', async ({ browser }) => {
+  /**
+   * El tiempo eran 30px fijos. En el teléfono el recuadro mide 150px y, con la
+   * etiqueta "Juega" al lado, el último dígito quedaba cortado contra el borde:
+   * justo el dato que no se puede perder de vista.
+   */
+  for (const ancho of [360, 390, 768, 1440]) {
+    const ctxA = await browser.newContext({ viewport: { width: ancho, height: 860 } });
+    const ctxB = await browser.newContext({ viewport: { width: ancho, height: 860 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    await registrar(a, `rj_a${ancho}`);
+    await registrar(b, `rj_b${ancho}`);
+
+    await a.getByRole('button', { name: '3+2', exact: true }).click();
+    await b.getByRole('button', { name: '3+2', exact: true }).click();
+    await a.waitForURL(/\/partida\//, { timeout: 30_000 });
+    await expect(a.locator('.gb-clock').first()).toBeVisible();
+
+    const desbordes = await a.evaluate(() => {
+      const fallos: string[] = [];
+      for (const caja of document.querySelectorAll('.gb-clock')) {
+        const t = caja.querySelector('.gb-clock__time') as HTMLElement | null;
+        if (!t) continue;
+        const rc = caja.getBoundingClientRect();
+        const rt = t.getBoundingClientRect();
+        const padR = parseFloat(getComputedStyle(caja).paddingRight);
+        const sobra = rt.right - (rc.right - padR);
+        if (sobra > 0.5) fallos.push(`"${t.textContent}" se sale ${sobra.toFixed(1)}px de ${rc.width.toFixed(0)}px`);
+        if (caja.scrollWidth > caja.clientWidth + 1) fallos.push('el recuadro quedó con scroll');
+      }
+      return fallos;
+    });
+
+    expect(desbordes, `a ${ancho}px: ${desbordes.join(' | ')}`).toEqual([]);
+    await ctxA.close();
+    await ctxB.close();
+  }
 });

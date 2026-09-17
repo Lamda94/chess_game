@@ -1,4 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
+import { colorDe, mover } from './ayudas.js';
 
 const TAG = Math.random().toString(36).slice(2, 7);
 
@@ -102,6 +103,28 @@ test('una partida ajena se puede espectar sin poder mover', async ({ browser }) 
   await espectador.getByRole('gridcell', { name: /^e4,/ }).click();
   await espectador.waitForTimeout(500);
   await expect(espectador.getByText('Todavía no se jugó nada.')).toBeVisible();
+
+  /**
+   * Y lo que de verdad hace que espectar sirva: las jugadas llegan solas.
+   *
+   * Esto faltaba, y por eso se escapó el fallo — el espectador no entraba a
+   * ninguna sala, así que veía la posición del momento en que abría la página y
+   * después nada hasta recargar. La prueba no recarga a propósito.
+   */
+  const blancas = (await colorDe(a, gameId)) === 'white' ? a : b;
+  const negras = blancas === a ? b : a;
+
+  await mover(blancas, 'e2', 'e4');
+  await expect(espectador.getByText('e4', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+
+  await mover(negras, 'e7', 'e5');
+  await expect(espectador.getByText('e5', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+
+  // Pero el chat sigue siendo cosa de los dos que juegan.
+  await blancas.getByPlaceholder(/Escribí|mensaje/i).fill('hola rival');
+  await blancas.keyboard.press('Enter');
+  await expect(negras.getByText('hola rival')).toBeVisible({ timeout: 15_000 });
+  await expect(espectador.getByText('hola rival')).toHaveCount(0);
 });
 
 test('el tablero se recorre con las flechas del teclado', async ({ browser }) => {
