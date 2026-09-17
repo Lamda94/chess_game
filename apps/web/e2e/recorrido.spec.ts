@@ -163,6 +163,29 @@ test('recorrido de perfil y análisis', async ({ browser }) => {
   await perfil.screenshot({ path: `${OUT}/14-perfil.png`, fullPage: true });
 });
 
+test('recorrido del salón y los puzzles', async ({ browser }) => {
+  const page = await nuevaPagina(browser, 1440, 1000, 'dark');
+  await registrar(page, 'tour_entr');
+
+  await page.goto('/entrenamiento/la-clavada');
+  await expect(page.getByText('PASO 1 DE 2')).toBeVisible();
+  await page.getByRole('gridcell', { name: /^e4,/ }).click();
+  await page.getByRole('gridcell', { name: /^e5,/ }).click();
+  await expect(page.getByText('¡Esa es!')).toBeVisible();
+  await page.screenshot({ path: `${OUT}/15-entrenamiento.png`, fullPage: true });
+
+  await page.goto('/puzzles');
+  await expect(page.getByText('TU RATING DE PUZZLES')).toBeVisible();
+  await page.getByRole('button', { name: 'Ver pista' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${OUT}/16-puzzles.png` });
+
+  await page.goto('/ranking');
+  await expect(page.getByRole('heading', { name: 'Tabla de posiciones' })).toBeVisible();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${OUT}/17-ranking.png`, fullPage: true });
+});
+
 test('recorrido en teléfono', async ({ browser }) => {
   const movil = await nuevaPagina(browser, 390, 844, 'dark');
   const rival = await nuevaPagina(browser, 1280, 800, 'dark');

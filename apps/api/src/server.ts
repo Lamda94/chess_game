@@ -10,6 +10,8 @@ import { authenticatePlugin, HttpError } from './plugins/authenticate.js';
 import { authRoutes } from './auth/routes.js';
 import { gameRoutes } from './routes/games.js';
 import { profileRoutes } from './routes/profile.js';
+import { leaderboardRoutes } from './routes/leaderboard.js';
+import { trainingRoutes } from './routes/training.js';
 
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -69,6 +71,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(authRoutes);
   await app.register(gameRoutes);
   await app.register(profileRoutes);
+  await app.register(leaderboardRoutes);
+  await app.register(trainingRoutes);
 
   return app;
 }

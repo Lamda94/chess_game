@@ -1,6 +1,7 @@
 import { applyGame, displayRating, type Rating } from '@gambito/rating';
 import { PROVISIONAL_GAMES, type Category, type Color, type GameResult } from '@gambito/shared';
 import { prisma } from '../db.js';
+import { invalidarTabla } from '../routes/leaderboard.js';
 
 export interface RatingChange {
   before: Record<Color, number>;
@@ -52,6 +53,9 @@ export async function applyRatedResult(params: {
       },
     }),
   ]);
+
+  // La tabla de posiciones queda vieja apenas se mueve un rating.
+  await invalidarTabla(params.category);
 
   return {
     before: { white: white.rating, black: black.rating },

@@ -1,3 +1,6 @@
+export * from './puzzles.js';
+export * from './lecciones.js';
+export * from './mate.js';
 export * from './openings.js';
 import { Chess } from 'chess.js';
 import type { Color, Termination } from '@gambito/shared';

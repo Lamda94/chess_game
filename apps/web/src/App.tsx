@@ -10,6 +10,9 @@ import { Lobby } from './pages/Lobby.js';
 import { Buscar } from './pages/Buscar.js';
 import { Partida } from './pages/Partida.js';
 import { Perfil } from './pages/Perfil.js';
+import { Ranking } from './pages/Ranking.js';
+import { Entrenamiento } from './pages/Entrenamiento.js';
+import { Puzzles } from './pages/Puzzles.js';
 
 /**
  * La práctica y el análisis son las dos pantallas que usan Stockfish y cargan
@@ -60,6 +63,10 @@ export function App() {
         />
         <Route path="/perfil" element={<Privado><Perfil /></Privado>} />
         <Route path="/perfil/:username" element={<Privado><Perfil /></Privado>} />
+        <Route path="/ranking" element={<Privado><Ranking /></Privado>} />
+        <Route path="/entrenamiento" element={<Privado><Entrenamiento /></Privado>} />
+        <Route path="/entrenamiento/:slug" element={<Privado><Entrenamiento /></Privado>} />
+        <Route path="/puzzles" element={<Privado><Puzzles /></Privado>} />
         <Route
           path="/analisis/:id"
           element={

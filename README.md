@@ -4,9 +4,10 @@ Plataforma de ajedrez competitivo. Monorepo con la API (Fastify + Socket.IO + Po
 Redis) y el front (React + Vite). El servidor es **autoritativo**: valida cada jugada y es
 dueño del reloj; el cliente nunca decide el resultado.
 
-Estado: **Fase 2 — IA y perfil**. Dos personas registradas se emparejan por rating, juegan
-una partida real con reloj que mueve su Glicko-2, practican contra Stockfish en el navegador
-y después revisan la partida jugada a jugada con el análisis del motor.
+Estado: **Fase 3 — ranking y entrenamiento**. Dos personas registradas se emparejan por
+rating, juegan una partida real con reloj que mueve su Glicko-2, practican contra Stockfish
+en el navegador, revisan la partida jugada a jugada con el análisis del motor, aprenden en
+un salón de lecciones interactivas y compiten por la tabla de posiciones.
 
 ## Arrancar
 
@@ -46,7 +47,8 @@ crea una cuenta nueva que después elige su nombre de jugador.
 apps/api     Fastify 5, Socket.IO, Prisma, motor de partidas y emparejamiento
 apps/web     React 19, Vite, TailwindCSS v4, tablero SVG, Stockfish en un worker
 packages/shared       tipos, esquemas Zod y contratos de eventos del socket
-packages/chess-core   reglas de ajedrez (envoltorio de chess.js) y libro de aperturas
+packages/chess-core   reglas de ajedrez, libro de aperturas, búsqueda de mate,
+                      contenido de las lecciones y set de puzzles
 packages/rating       Glicko-2
 packages/ui           tokens del sistema de diseño y componentes base
 infra/                docker-compose de Postgres y Redis
@@ -95,34 +97,59 @@ Los niveles 1 a 8 degradan la búsqueda con `Skill Level`; del 9 al 20 usan
 `UCI_LimitStrength` con un Elo objetivo, porque debajo de ~1320 el motor no promete una
 fuerza concreta. El tiempo por jugada se limita siempre.
 
+## Entrenamiento
+
+El contenido del salón vive en `packages/chess-core/src/lecciones.ts` y los puzzles en
+`puzzles.ts`, como datos tipados y no como prosa en un CMS. La razón es que cada paso
+necesita una posición y una jugada esperada, y eso hay que poder **verificarlo**: la suite
+recorre todo el contenido y comprueba que cada FEN sea legal y que cada jugada exista de
+verdad. Una lección rota se cae en las pruebas y no delante de quien está aprendiendo.
+
+Los puzzles son todos mates forzados, y eso tampoco es casualidad: un mate se verifica por
+búsqueda exhaustiva con las mismas reglas del juego, sin depender de un motor ni del
+criterio de nadie. `esMateEnN` hace esa búsqueda y se usa en dos lugares — en la suite para
+comprobar que cada puzzle es lo que dice ser, y en el servidor para decidir si la jugada de
+quien practica conserva el mate. Se acepta **cualquier** jugada que lo conserve, no una
+respuesta en particular.
+
+Esa misma función descarta un error sutil: `chess.js` acepta posiciones donde el bando que
+acaba de mover quedó en jaque, algo imposible en el tablero, y esas posiciones producen
+"mates" fantasma. `posicionJugable` las filtra.
+
 ## Verificar
 
 ```bash
-pnpm turbo run typecheck test          # 46 pruebas (necesita Postgres y Redis arriba)
+pnpm turbo run typecheck test          # 164 pruebas (necesita Postgres y Redis arriba)
 pnpm --filter @gambito/web exec playwright install chromium   # sólo la primera vez
-pnpm --filter @gambito/web e2e         # 14 pruebas en un navegador real
+pnpm --filter @gambito/web e2e         # 22 pruebas en un navegador real
 ```
 
-- `packages/chess-core` (26): enroque, al paso, coronación, mate, ahogado, triple
-  repetición, material insuficiente, balance de capturas, hándicap de material y
-  reconocimiento de aperturas desde el PGN.
+- `packages/chess-core` (144): enroque, al paso, coronación, mate, ahogado, triple
+  repetición, material insuficiente, balance de capturas, hándicap de material,
+  reconocimiento de aperturas desde el PGN, y la verificación completa de las lecciones y
+  de los puzzles.
 - `packages/rating` (12): el ejemplo publicado por Glickman con sus valores exactos,
   simetría entre ganador y perdedor, y los topes de desviación.
 - `apps/api` (8): ciclo completo con dos sockets (emparejar → mate → guardado), rechazo de
   jugada ilegal con corrección del estado, abandono, colas separadas por control de tiempo,
   recuperación de una partida que quedó activa tras un reinicio, y el movimiento de rating
   en partidas clasificatorias y amistosas.
-- `apps/web` (14): partida completa entre dos navegadores, Stockfish contestando de verdad,
-  pistas, deshacer, hándicap, perfil con aperturas deducidas del PGN, y el visor de análisis
-  clasificando jugadas. Las capturas quedan en `apps/web/e2e/recorrido/`.
+- `apps/web` (22): partida completa entre dos navegadores, Stockfish contestando de verdad,
+  pistas, deshacer, hándicap, perfil con aperturas deducidas del PGN, visor de análisis
+  clasificando jugadas, lecciones resueltas sobre el tablero, puzzles resueltos y fallados
+  calculando la solución con las reglas del juego, y el ranking. Las capturas quedan en
+  `apps/web/e2e/recorrido/`.
 
 Las pruebas de navegador crean varias cuentas seguidas, así que el `.env` local sube
 `RATE_LIMIT_REGISTER_MAX`. Los valores por defecto del código son los de producción.
 
 ## Lo que todavía no está
 
-Fases 3 y 4 del plan: tabla de posiciones, salón de entrenamiento con lecciones y puzzles,
-y torneos (suizo, arena y eliminación), además de amigos y desafíos directos.
+Fase 4 del plan: torneos (suizo, arena y eliminación), amigos, desafíos directos y
+espectar partidas en vivo.
+
+El set de puzzles son quince mates curados y verificados. Para traer volumen hay que
+importar el set público de lichess; el modelo ya contempla temas más allá del mate.
 
 El análisis corre entero en el navegador de quien lo pide y no se guarda: volver a abrir una
 partida la vuelve a analizar. Guardar las evaluaciones en `Move.evalCp`, que ya existe en el

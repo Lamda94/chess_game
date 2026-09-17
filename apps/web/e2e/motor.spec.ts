@@ -59,3 +59,10 @@ test('Stockfish arranca en el navegador y contesta una jugada', async ({ page })
   expect(resultado.bestmove).toContain('bestmove');
   expect(resultado.segunda).toMatch(/^bestmove [a-h][1-8][a-h][1-8]/);
 });
+
+test('la licencia del motor se sirve y el aviso la enlaza', async ({ page }) => {
+  // La GPL exige acompañar el binario con su licencia: tiene que estar servida.
+  const respuesta = await page.request.get('/engine/LICENSE-stockfish.txt');
+  expect(respuesta.status()).toBe(200);
+  expect(await respuesta.text()).toContain('GNU GENERAL PUBLIC LICENSE');
+});

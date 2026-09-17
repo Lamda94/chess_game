@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Avatar } from '@gambito/ui';
 import { useSession } from '../state/session.js';
 import { useSocket } from '../state/socket.js';
@@ -22,6 +22,27 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Logo size={24} />
           <span className="gb-display hidden text-[19px] tracking-[0.18em] sm:inline">GAMBITO</span>
         </Link>
+
+        <nav className="hidden items-center gap-6 md:flex">
+          {[
+            ['/', 'Jugar'],
+            ['/entrenamiento', 'Entrenamiento'],
+            ['/ranking', 'Ranking'],
+          ].map(([destino, etiqueta]) => (
+            <NavLink
+              key={destino}
+              to={destino!}
+              end={destino === '/'}
+              className="text-sm"
+              style={({ isActive }) => ({
+                color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                fontWeight: isActive ? 500 : 400,
+              })}
+            >
+              {etiqueta}
+            </NavLink>
+          ))}
+        </nav>
 
         <div className="flex-1" />
 

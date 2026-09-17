@@ -10,6 +10,7 @@ import {
   type Color,
   type GameState,
 } from '@gambito/shared';
+import { AvisoMotor } from '../components/AvisoMotor.js';
 import { Board } from '../board/Board.js';
 import { useGameBoard } from '../board/useGameBoard.js';
 import { get } from '../api/client.js';
@@ -388,6 +389,7 @@ export function Analisis() {
             ))}
           </div>
           <Link to="/" className="gb-btn gb-btn--secondary gb-btn--block">Volver al lobby</Link>
+          <AvisoMotor />
         </div>
       </aside>
     </div>

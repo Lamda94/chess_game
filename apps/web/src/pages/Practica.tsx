@@ -7,6 +7,7 @@ import {
   type PieceType,
 } from '@gambito/chess-core';
 import { TERMINATION_LABEL, type Color, opposite } from '@gambito/shared';
+import { AvisoMotor } from '../components/AvisoMotor.js';
 import { Board } from '../board/Board.js';
 import { useGameBoard } from '../board/useGameBoard.js';
 import {
@@ -330,6 +331,7 @@ export function Practica() {
         <Button variant="primary" block style={{ height: 50 }} onClick={nuevaPartida}>
           Nueva partida de práctica
         </Button>
+        <AvisoMotor />
       </aside>
 
       {/* Tablero */}

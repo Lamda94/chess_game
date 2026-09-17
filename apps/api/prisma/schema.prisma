@@ -71,6 +71,10 @@ model User {
   gamesAsWhite   Game[]         @relation("WhitePlayer")
   gamesAsBlack   Game[]         @relation("BlackPlayer")
   chatMessages   ChatMessage[]
+  lessonProgress LessonProgress[]
+  puzzleAttempts PuzzleAttempt[]
+  puzzleStats    PuzzleStats?
+  achievements   UserAchievement[]
 
   @@index([lastSeenAt])
 }
@@ -168,6 +172,57 @@ model Move {
 
   @@unique([gameId, ply])
   @@index([gameId])
+}
+
+/// El contenido de las lecciones vive en el código (packages/chess-core), no en la
+/// base: acá sólo se guarda quién completó qué. Por eso la referencia es el slug y
+/// no una clave foránea.
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonSlug  String
+  completedAt DateTime @default(now())
+
+  @@unique([userId, lessonSlug])
+  @@index([userId])
+}
+
+model PuzzleAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Identificador del puzzle en el set del código.
+  puzzleId    String
+  solved      Boolean
+  msTaken     Int
+  attemptedAt DateTime @default(now())
+
+  @@index([userId, attemptedAt])
+}
+
+model PuzzleStats {
+  userId       String   @id
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating       Int      @default(1200)
+  solved       Int      @default(0)
+  failed       Int      @default(0)
+  /// Aciertos seguidos ahora mismo.
+  streak       Int      @default(0)
+  bestStreak   Int      @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model UserAchievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Código del logro, definido en el código.
+  code       String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, code])
+  @@index([userId])
 }
 
 model ChatMessage {
