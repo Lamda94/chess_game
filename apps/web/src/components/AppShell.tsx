@@ -6,6 +6,7 @@ import { useSocket } from '../state/socket.js';
 import { useTheme } from '../state/theme.js';
 import { Logo } from './Logo.js';
 import { AvisoCorreo } from './AvisoCorreo.js';
+import { PieDeFuente } from './PieDeFuente.js';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useSession();
@@ -101,6 +102,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="flex flex-1 flex-col">{children}</main>
+      <PieDeFuente />
     </>
   );
 }

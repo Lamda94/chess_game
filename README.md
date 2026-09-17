@@ -278,12 +278,28 @@ La misma suite de navegador sirve para probar un despliegue:
 E2E_BASE_URL=https://tu-dominio pnpm --filter @gambito/web e2e e2e/partida.spec.ts
 ```
 
+## Licencia
+
+Gambito es software libre bajo **AGPLv3** — el texto completo está en
+[`LICENSE`](LICENSE) y el porqué de esa elección, en [`AVISO.md`](AVISO.md).
+
+El resumen: es una aplicación web, y la GPLv3 se activa al *distribuir* el programa. Quien
+levanta un sitio no distribuye nada — sus usuarios reciben páginas, no el programa —, así que
+con GPLv3 cualquiera podría tomar este código, modificarlo, ofrecerlo como su propio servicio
+y no publicar una línea. La AGPL cierra eso en su artículo 13.
+
+Ese mismo artículo obliga a algo concreto: **quien usa el sitio tiene que poder llegar al
+código de la versión que está usando**. Por eso hay un enlace al repositorio en el pie de
+todas las pantallas, incluido el login. No es un crédito: sin él, un despliegue incumple su
+propia licencia, y hay una prueba de navegador que lo verifica. Si desplegás una versión
+modificada, apuntá `VITE_REPO_URL` a tu propio repositorio.
+
+Stockfish es un proyecto aparte bajo GPLv3, compatible con esto para el uso que se le da: se
+carga como Web Worker separado y habla UCI por mensajes. Su licencia viaja junto al binario.
+
 ## Lo que todavía no está
 
 Las cuatro fases del plan están terminadas. Lo que queda son límites conocidos, no fases.
-
-No hay archivo de licencia. Stockfish es GPLv3 y viaja al navegador de cada visitante, así
-que publicar el proyecto obliga a decidir bajo qué licencia sale.
 
 No hay copias de seguridad automáticas de la base. Los datos viven en un volumen de Docker
 (`gambito_postgres`), que sobrevive a los despliegues pero no a que se pierda el servidor.

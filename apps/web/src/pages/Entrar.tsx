@@ -5,6 +5,7 @@ import { Button, Field } from '@gambito/ui';
 import { ChessGame } from '@gambito/chess-core';
 import { ApiError, get } from '../api/client.js';
 import { useSession } from '../state/session.js';
+import { PieDeFuente } from '../components/PieDeFuente.js';
 import { Logo } from '../components/Logo.js';
 import { Piece } from '../board/pieces.js';
 import { FILES, RANKS, isLightSquare } from '@gambito/chess-core';
@@ -113,7 +114,8 @@ export function Entrar() {
         </div>
       </aside>
 
-      <section className="flex flex-1 flex-col justify-center gap-6 px-5 py-10 sm:px-16 lg:px-24">
+      <div className="flex flex-1 flex-col">
+        <section className="flex flex-1 flex-col justify-center gap-6 px-5 py-10 sm:px-16 lg:px-24">
         <div className="lg:hidden">
           <Logo size={26} />
         </div>
@@ -255,7 +257,9 @@ export function Entrar() {
             {busy ? 'Un momento…' : mode === 'register' ? 'Crear cuenta con correo' : 'Entrar'}
           </Button>
         </form>
-      </section>
+        </section>
+        <PieDeFuente />
+      </div>
     </div>
   );
 }
