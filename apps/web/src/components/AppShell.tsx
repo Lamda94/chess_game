@@ -26,8 +26,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="hidden items-center gap-6 md:flex">
           {[
             ['/', 'Jugar'],
+            ['/torneos', 'Torneos'],
             ['/entrenamiento', 'Entrenamiento'],
             ['/ranking', 'Ranking'],
+            // El enlace sólo aparece para quien puede usarlo; la ruta igual
+            // está protegida del lado del servidor.
+            ...(user?.role === 'MODERATOR' || user?.role === 'ADMIN'
+              ? [['/moderacion', 'Moderación']]
+              : []),
           ].map(([destino, etiqueta]) => (
             <NavLink
               key={destino}
@@ -35,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               end={destino === '/'}
               className="text-sm"
               style={({ isActive }) => ({
-                color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
                 fontWeight: isActive ? 500 : 400,
               })}
             >

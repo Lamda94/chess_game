@@ -14,6 +14,8 @@ import {
   gameRoom,
   queueJoinSchema,
   categoryFor,
+  tournamentIdSchema,
+  tournamentRoom,
 } from '@gambito/shared';
 import { prisma } from './db.js';
 import { env } from './env.js';
@@ -22,6 +24,7 @@ import { ACCESS_COOKIE } from './auth/session.js';
 import { verifyAccessToken } from './auth/tokens.js';
 import { gameEngine } from './game/engine.js';
 import { matchmaker } from './game/matchmaking.js';
+import { conectarDifusorTorneo } from './tournament/motor.js';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
@@ -60,6 +63,17 @@ export function createSocketServer(httpServer: HttpServer): IO {
       next(new Error('UNAUTHENTICATED'));
       return;
     }
+    // Una suspensión tiene que cortar el juego en curso, no esperar a que venza
+    // el token: por eso se consulta el estado de la cuenta en cada conexión.
+    const cuenta = await prisma.user.findUnique({
+      where: { id: claims.sub },
+      select: { suspendedAt: true },
+    });
+    if (!cuenta || cuenta.suspendedAt) {
+      next(new Error('ACCOUNT_SUSPENDED'));
+      return;
+    }
+
     socket.data.userId = claims.sub;
     socket.data.username = claims.username;
     next();
@@ -173,6 +187,19 @@ export function createSocketServer(httpServer: HttpServer): IO {
       });
     });
 
+    // Espectar un torneo: sólo hay que entrar a su sala para recibir los avisos.
+    socket.on('tournament:watch', (raw) => {
+      const parsed = tournamentIdSchema.safeParse(raw);
+      if (!parsed.success) return;
+      void socket.join(tournamentRoom(parsed.data.tournamentId));
+    });
+
+    socket.on('tournament:unwatch', (raw) => {
+      const parsed = tournamentIdSchema.safeParse(raw);
+      if (!parsed.success) return;
+      void socket.leave(tournamentRoom(parsed.data.tournamentId));
+    });
+
     socket.on('disconnect', async () => {
       // Salir de la cola al desconectarse evita emparejar contra un fantasma.
       // La partida en curso NO se toca: el jugador puede reconectar.
@@ -202,6 +229,28 @@ export function createSocketServer(httpServer: HttpServer): IO {
     },
     drawDeclined: (gameId) => {
       play.to(gameRoom(gameId)).emit('game:drawDeclined', { gameId });
+    },
+  });
+
+  conectarDifusorTorneo({
+    clasificacionCambio: (tournamentId) => {
+      play.to(tournamentRoom(tournamentId)).emit('tournament:update', {
+        tournamentId,
+        motivo: 'clasificacion',
+      });
+    },
+    rondaEmpezo: (tournamentId, ronda) => {
+      play.to(tournamentRoom(tournamentId)).emit('tournament:update', {
+        tournamentId,
+        motivo: 'ronda',
+        ronda,
+      });
+    },
+    torneoTermino: (tournamentId) => {
+      play.to(tournamentRoom(tournamentId)).emit('tournament:update', {
+        tournamentId,
+        motivo: 'fin',
+      });
     },
   });
 

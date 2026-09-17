@@ -71,7 +71,7 @@ export function Entrenamiento() {
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>del programa</span>
           </div>
           <div className="flex flex-col items-end gap-0.5">
-            <span className="gb-display text-[30px] leading-none" style={{ color: 'var(--accent)' }}>
+            <span className="gb-display text-[30px] leading-none" style={{ color: 'var(--accent-text)' }}>
               {puzzles.data?.stats.bestStreak ?? 0}
             </span>
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>mejor racha</span>
@@ -156,7 +156,7 @@ export function Entrenamiento() {
             className="flex flex-col gap-3.5 rounded-2xl p-6"
             style={{ background: 'var(--accent-wash)', border: '1px solid var(--accent)' }}
           >
-            <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent-text)' }}>
               ENTRENADOR DE TÁCTICA
             </span>
             <div className="flex items-baseline gap-3">
@@ -271,10 +271,10 @@ function VistaLeccion({ slug }: { slug: string }) {
   const orientacion: Color = actual.orientacion ?? new ChessGame(actual.fen).turn();
 
   return (
-    <section className="gb-card flex min-w-0 flex-col gap-4 self-start">
+    <section className="@container gb-card flex min-w-0 flex-col gap-4 self-start">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent)' }}>
+          <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent-text)' }}>
             PASO {paso + 1} DE {leccion.pasos.length}
           </span>
           <h2 className="gb-display m-0 mt-1 text-[28px] leading-tight">{leccion.titulo}</h2>
@@ -286,7 +286,7 @@ function VistaLeccion({ slug }: { slug: string }) {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-5 md:flex-row">
+      <div className="flex flex-col gap-5 @3xl:flex-row">
         <div className="flex shrink-0 flex-col gap-3" style={{ width: BOARD_SIZE }}>
           <Board board={board} orientation={orientacion} size={BOARD_SIZE} />
           {actual.esperada ? (

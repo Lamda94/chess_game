@@ -48,6 +48,33 @@ enum OAuthProvider {
   GOOGLE
 }
 
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum ChallengeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum TournamentFormat {
+  SWISS
+  ARENA
+  KNOCKOUT
+}
+
+enum TournamentStatus {
+  SCHEDULED
+  RUNNING
+  FINISHED
+  CANCELLED
+}
+
 model User {
   id            String    @id @default(cuid())
   /// Único dato público de la cuenta. Nulo hasta que un alta por OAuth lo elige.
@@ -62,6 +89,9 @@ model User {
   bio           String?
   country       String?
   role          Role      @default(PLAYER)
+  /// Cuenta suspendida por moderación: no puede entrar ni jugar.
+  suspendedAt   DateTime?
+  suspendedFor  String?
   createdAt     DateTime  @default(now())
   lastSeenAt    DateTime  @default(now())
 
@@ -72,6 +102,12 @@ model User {
   gamesAsBlack   Game[]         @relation("BlackPlayer")
   chatMessages   ChatMessage[]
   lessonProgress LessonProgress[]
+  tournamentsCreated Tournament[]      @relation("TournamentCreator")
+  tournamentEntries  TournamentEntry[]
+  amistadesPedidas   Friendship[]      @relation("AmistadPedida")
+  amistadesRecibidas Friendship[]      @relation("AmistadRecibida")
+  desafiosEnviados   Challenge[]       @relation("DesafioEnviado")
+  desafiosRecibidos  Challenge[]       @relation("DesafioRecibido")
   puzzleAttempts PuzzleAttempt[]
   puzzleStats    PuzzleStats?
   achievements   UserAchievement[]
@@ -149,8 +185,13 @@ model Game {
   startedAt DateTime  @default(now())
   endedAt   DateTime?
 
+  /// Cuando la partida pertenece a un torneo.
+  tournamentId String?
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+
   moves    Move[]
   messages ChatMessage[]
+  pairing  TournamentPairing?
 
   @@index([whiteId, startedAt])
   @@index([blackId, startedAt])
@@ -177,6 +218,115 @@ model Move {
 /// El contenido de las lecciones vive en el código (packages/chess-core), no en la
 /// base: acá sólo se guarda quién completó qué. Por eso la referencia es el slug y
 /// no una clave foránea.
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  requester   User             @relation("AmistadPedida", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User             @relation("AmistadRecibida", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  respondedAt DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+model Challenge {
+  id           String          @id @default(cuid())
+  fromId       String
+  from         User            @relation("DesafioEnviado", fields: [fromId], references: [id], onDelete: Cascade)
+  /// Nulo en un desafío abierto: lo toma quien abra el enlace.
+  toId         String?
+  to           User?           @relation("DesafioRecibido", fields: [toId], references: [id], onDelete: Cascade)
+  initialSec   Int
+  incrementSec Int
+  rated        Boolean         @default(true)
+  /// Color que pide quien desafía; nulo es al azar.
+  color        String?
+  status       ChallengeStatus @default(PENDING)
+  gameId       String?
+  createdAt    DateTime        @default(now())
+  expiresAt    DateTime
+
+  @@index([toId, status])
+  @@index([status, expiresAt])
+}
+
+model Tournament {
+  id           String           @id @default(cuid())
+  name         String
+  description  String?
+  format       TournamentFormat
+  category     Category
+  initialSec   Int
+  incrementSec Int
+  /// Rondas previstas en suizo y eliminación; nulo en arena, que va por tiempo.
+  rounds       Int?
+  currentRound Int              @default(0)
+  /// Duración en minutos de una arena.
+  durationMin  Int?
+  status       TournamentStatus @default(SCHEDULED)
+  startsAt     DateTime
+  endedAt      DateTime?
+  minRating    Int?
+  maxRating    Int?
+  maxPlayers   Int?
+  isPrivate    Boolean          @default(false)
+  /// Código de acceso de un torneo privado.
+  joinCode     String?          @unique
+  /// Medio punto al que queda sin rival en una ronda impar.
+  halfPointBye Boolean          @default(true)
+  createdById  String
+  createdBy    User             @relation("TournamentCreator", fields: [createdById], references: [id])
+  createdAt    DateTime         @default(now())
+
+  entries  TournamentEntry[]
+  pairings TournamentPairing[]
+  games    Game[]
+
+  @@index([status, startsAt])
+}
+
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Puntos del torneo: en suizo 1 por victoria, en arena 2 con bonus de racha.
+  score        Float      @default(0)
+  games        Int        @default(0)
+  streak       Int        @default(0)
+  /// Rating al momento de inscribirse, que es el que ordena la siembra.
+  seedRating   Int
+  withdrawn    Boolean    @default(false)
+  eliminated   Boolean    @default(false)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId, score])
+}
+
+model TournamentPairing {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  round        Int
+  board        Int
+  whiteId      String?
+  blackId      String?
+  gameId       String?     @unique
+  game         Game?       @relation(fields: [gameId], references: [id])
+  result       GameResult?
+  /// Una fila sin rival: el jugador pasa o suma el bye.
+  isBye        Boolean     @default(false)
+  byeUserId    String?
+
+  @@unique([tournamentId, round, board])
+  @@index([tournamentId, round])
+}
+
 model LessonProgress {
   id          String   @id @default(cuid())
   userId      String

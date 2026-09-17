@@ -150,7 +150,7 @@ export function Puzzles() {
       <div className="flex flex-1 flex-col items-center gap-3">
         <div className="flex flex-col gap-3" style={{ width: BOARD_SIZE }}>
           <div className="flex items-baseline justify-between">
-            <span className="gb-mono text-[11px] tracking-[0.12em]" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-[11px] tracking-[0.12em]" style={{ color: 'var(--accent-text)' }}>
               {TEMA_LABEL[puzzle.tema].toUpperCase()} · {puzzle.rating}
             </span>
             <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
@@ -207,7 +207,7 @@ export function Puzzles() {
           <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--text-muted)' }}>
             TU RATING DE PUZZLES
           </span>
-          <span className="gb-mono text-[40px] font-bold leading-none" style={{ color: 'var(--accent)' }}>
+          <span className="gb-mono text-[40px] font-bold leading-none" style={{ color: 'var(--accent-text)' }}>
             {stats?.rating ?? 1200}
           </span>
           <div className="flex justify-between text-[13px]" style={{ color: 'var(--text-muted)' }}>

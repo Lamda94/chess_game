@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import type { AccessTokenClaims } from '@gambito/shared';
 import { ACCESS_COOKIE } from '../auth/session.js';
 import { verifyAccessToken } from '../auth/tokens.js';
+import { estaSuspendido } from '../auth/suspension.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -32,7 +33,11 @@ const plugin: FastifyPluginAsync = async (app) => {
 
   app.addHook('onRequest', async (request) => {
     const token = request.cookies[ACCESS_COOKIE];
-    request.auth = token ? await verifyAccessToken(token) : null;
+    const claims = token ? await verifyAccessToken(token) : null;
+    // Una cuenta suspendida queda como anónima: el token sigue siendo válido
+    // criptográficamente, pero ya no representa a nadie que pueda usar el sitio.
+    // El front la manda al login, donde recibe el motivo.
+    request.auth = claims && (await estaSuspendido(claims.sub)) ? null : claims;
   });
 
   app.decorate('requireAuth', async (request: FastifyRequest) => {

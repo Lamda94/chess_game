@@ -36,11 +36,15 @@ async function refreshSession(): Promise<boolean> {
 }
 
 async function raw(path: string, init: RequestInit): Promise<Response> {
-  return fetch(`/api${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
-    ...init,
-  });
+  // La cabecera de tipo va sólo cuando hay cuerpo: declarar JSON y no mandar
+  // nada hace que el servidor rechace la petición con un 400, y eso rompía
+  // cualquier POST sin datos —cerrar sesión, inscribirse a un torneo— de una
+  // forma que no se notaba hasta probarla de punta a punta.
+  const headers: Record<string, string> = { ...((init.headers as Record<string, string>) ?? {}) };
+  if (init.body !== undefined && headers['Content-Type'] === undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return fetch(`/api${path}`, { credentials: 'include', ...init, headers });
 }
 
 /**

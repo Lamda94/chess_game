@@ -4,10 +4,12 @@ Plataforma de ajedrez competitivo. Monorepo con la API (Fastify + Socket.IO + Po
 Redis) y el front (React + Vite). El servidor es **autoritativo**: valida cada jugada y es
 dueño del reloj; el cliente nunca decide el resultado.
 
-Estado: **Fase 3 — ranking y entrenamiento**. Dos personas registradas se emparejan por
-rating, juegan una partida real con reloj que mueve su Glicko-2, practican contra Stockfish
-en el navegador, revisan la partida jugada a jugada con el análisis del motor, aprenden en
-un salón de lecciones interactivas y compiten por la tabla de posiciones.
+Estado: **Fase 4 — torneos y social**, la última del plan. Dos personas registradas se
+emparejan por rating, juegan una partida real con reloj que mueve su Glicko-2, practican
+contra Stockfish en el navegador, revisan la partida jugada a jugada con el análisis del
+motor, aprenden en un salón de lecciones interactivas, compiten por la tabla de posiciones,
+organizan torneos suizos, arena o por eliminación, se agregan como amigos, se desafían por
+enlace y miran partidas ajenas en vivo.
 
 ## Arrancar
 
@@ -50,6 +52,7 @@ packages/shared       tipos, esquemas Zod y contratos de eventos del socket
 packages/chess-core   reglas de ajedrez, libro de aperturas, búsqueda de mate,
                       contenido de las lecciones y set de puzzles
 packages/rating       Glicko-2
+packages/tournament   emparejamiento suizo, cuadro de eliminación, arena y desempates
 packages/ui           tokens del sistema de diseño y componentes base
 infra/                docker-compose de Postgres y Redis
 ```
@@ -119,34 +122,100 @@ acaba de mover quedó en jaque, algo imposible en el tablero, y esas posiciones 
 ## Verificar
 
 ```bash
-pnpm turbo run typecheck test          # 164 pruebas (necesita Postgres y Redis arriba)
+pnpm turbo run typecheck test          # 277 pruebas (necesita Postgres y Redis arriba)
 pnpm --filter @gambito/web exec playwright install chromium   # sólo la primera vez
-pnpm --filter @gambito/web e2e         # 22 pruebas en un navegador real
+pnpm --filter @gambito/web e2e         # 33 pruebas en un navegador real
 ```
 
 - `packages/chess-core` (144): enroque, al paso, coronación, mate, ahogado, triple
   repetición, material insuficiente, balance de capturas, hándicap de material,
   reconocimiento de aperturas desde el PGN, y la verificación completa de las lecciones y
   de los puzzles.
+- `packages/tournament` (65): rondas suizas simuladas con 7, 8, 12, 16 y 33 jugadores
+  comprobando que nadie repita rival ni acumule tres colores seguidos, desempates Buchholz
+  y Sonneborn-Berger, siembra del cuadro de eliminación y puntaje de racha en arena.
 - `packages/rating` (12): el ejemplo publicado por Glickman con sus valores exactos,
   simetría entre ganador y perdedor, y los topes de desviación.
-- `apps/api` (8): ciclo completo con dos sockets (emparejar → mate → guardado), rechazo de
+- `packages/ui` (38): contraste WCAG de cada combinación de texto y fondo que la interfaz
+  pinta, en los dos temas, leyendo los colores del propio `tokens.css`.
+- `apps/api` (18): ciclo completo con dos sockets (emparejar → mate → guardado), rechazo de
   jugada ilegal con corrección del estado, abandono, colas separadas por control de tiempo,
-  recuperación de una partida que quedó activa tras un reinicio, y el movimiento de rating
-  en partidas clasificatorias y amistosas.
-- `apps/web` (22): partida completa entre dos navegadores, Stockfish contestando de verdad,
+  recuperación de una partida que quedó activa tras un reinicio, el movimiento de rating en
+  partidas clasificatorias y amistosas, el avance automático de un torneo al cerrarse la
+  ronda, y la moderación con sus permisos.
+- `apps/web` (33): partida completa entre dos navegadores, Stockfish contestando de verdad,
   pistas, deshacer, hándicap, perfil con aperturas deducidas del PGN, visor de análisis
   clasificando jugadas, lecciones resueltas sobre el tablero, puzzles resueltos y fallados
-  calculando la solución con las reglas del juego, y el ranking. Las capturas quedan en
-  `apps/web/e2e/recorrido/`.
+  calculando la solución con las reglas del juego, el ranking, un suizo de cuatro jugadores
+  jugado de punta a punta, amigos y desafíos, espectar sin poder mover, el tablero recorrido
+  con el teclado y el panel de moderación. Las capturas quedan en `apps/web/e2e/recorrido/`.
 
 Las pruebas de navegador crean varias cuentas seguidas, así que el `.env` local sube
 `RATE_LIMIT_REGISTER_MAX`. Los valores por defecto del código son los de producción.
 
+## Torneos
+
+La lógica de emparejamiento vive en `packages/tournament`, sin tocar la base de datos ni la
+red: entra una lista de participantes y sale una lista de cruces. Eso es lo que permite
+simular torneos enteros en las pruebas, y fue así como aparecieron los dos errores que más
+costaron — rivales repetidos y tres colores seguidos.
+
+El suizo empareja **la ronda entera de una sola vez**, con una búsqueda con coste y vuelta
+atrás. La versión anterior iba grupo por grupo bajando "flotantes" al grupo siguiente, y eso
+no se puede arreglar: cuando el último grupo no cierra sin repetir un cruce, ya no hay forma
+de volver sobre los grupos anteriores. Acá el puntaje es un coste fuerte y no una partición
+rígida, así que la búsqueda cruza la frontera entre dos grupos sólo cuando es la única
+manera de no repetir. No repetir es una restricción: un rival ya enfrentado ni siquiera
+entra como candidato.
+
+En los colores manda la regla FIDE: cuando los dos prefieren lo mismo, la preferencia se le
+concede **al mejor clasificado**. Tenerlo al revés era lo que le daba tres blancas seguidas
+al puntero.
+
+## Moderación
+
+Hay un panel en `/moderacion` para quien tenga rol `MODERATOR` o `ADMIN`. Hace una sola
+cosa, porque es lo único que se puede hacer sin un mecanismo de denuncias: buscar una cuenta
+y suspenderla.
+
+Lo que importa es que la suspensión se aplica de verdad y en el acto. Revoca los refresh
+tokens, bloquea la reconexión del socket —o sea, deja de poder jugar— y marca la cuenta en
+Redis por lo que dura un token de acceso, que es el hueco por el que si no seguiría navegando
+quince minutos con el token que ya tenía. El rol se consulta contra la base en cada petición
+al panel y no se lee del JWT: si se leyera del token, a quien le sacan el rol lo conservaría
+hasta que venza.
+
+No hay forma de ascender a alguien desde la aplicación, a propósito. El primer moderador se
+marca a mano:
+
+```sql
+UPDATE "User" SET role = 'MODERATOR' WHERE "usernameLower" = 'nombre';
+```
+
+## Accesibilidad
+
+El tablero se recorre entero con las flechas y se juega con Enter; sólo la primera casilla
+entra en el orden de tabulación, para que no haya que pasar por sesenta y cuatro paradas
+para salir de él.
+
+El contraste no se revisa a ojo: `packages/ui/src/contraste.test.ts` lee los colores de
+`tokens.css` y verifica cada combinación que la interfaz pinta, en los dos temas. Eso
+encontró dos problemas reales. El ámbar de marca da 8,7:1 sobre el fondo oscuro pero 2,0:1
+sobre el claro, así que el ámbar **de texto** pasó a un token aparte (`--accent-text`) que en
+tema claro es más oscuro; `--accent` sigue siendo el vivo donde hace de fondo. Y el borde de
+los inputs y de los botones secundarios daba 1,9:1 y 1,4:1, cuando la WCAG 1.4.11 pide 3:1
+para el contorno que identifica un componente.
+
+Las piezas se verifican aparte y con otro criterio: lo que recorta una dama blanca sobre una
+casilla clara no es su relleno —1,26:1— sino su contorno oscuro, que da 10:1.
+
 ## Lo que todavía no está
 
-Fase 4 del plan: torneos (suizo, arena y eliminación), amigos, desafíos directos y
-espectar partidas en vivo.
+Las cuatro fases del plan están terminadas. Lo que queda son límites conocidos, no fases.
+
+La moderación no tiene cola de denuncias: no hay forma de que alguien reporte una partida o
+un mensaje, así que el panel sólo permite buscar y suspender. Un botón de denuncia en la
+partida y en el chat es el paso siguiente, y el panel ya tiene dónde apoyarse.
 
 El set de puzzles son quince mates curados y verificados. Para traer volumen hay que
 importar el set público de lichess; el modelo ya contempla temas más allá del mate.

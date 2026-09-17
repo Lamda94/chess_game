@@ -1,0 +1,17 @@
+{
+  "name": "Gambito",
+  "short_name": "Gambito",
+  "description": "Plataforma de ajedrez competitivo: partidas con reloj, torneos y entrenamiento.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0c0f",
+  "theme_color": "#0a0c0f",
+  "lang": "es",
+  "categories": ["games", "education"],
+  "icons": [
+    { "src": "/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icono-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

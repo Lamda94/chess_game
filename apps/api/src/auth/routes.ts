@@ -80,8 +80,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       const user = await prisma.user.findFirst({
         where: { OR: [{ email: identifier }, { usernameLower: identifier }] },
-        select: { ...USER_SELECT, passwordHash: true },
+        select: { ...USER_SELECT, passwordHash: true, suspendedAt: true, suspendedFor: true },
       });
+
+      if (user?.suspendedAt) {
+        throw new HttpError(
+          403,
+          'ACCOUNT_SUSPENDED',
+          `Tu cuenta está suspendida: ${user.suspendedFor ?? 'sin motivo registrado'}.`,
+        );
+      }
 
       // Mismo mensaje y mismo costo aproximado exista o no la cuenta: no filtramos
       // qué correos están registrados.
@@ -93,7 +101,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         throw new HttpError(401, 'BAD_CREDENTIALS', 'Usuario o contraseña incorrectos.');
       }
 
-      const { passwordHash: _ignored, ...session } = user;
+      const { passwordHash: _ignored, suspendedAt: _s, suspendedFor: _m, ...session } = user;
       await issueSession(reply, session);
       await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
       return { user: toSessionUser(session) };

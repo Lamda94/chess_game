@@ -77,6 +77,8 @@ export class GameEngine {
     category: Category;
     timeControl: TimeControl;
     rated: boolean;
+    /** Cuando la partida forma parte de un torneo. */
+    tournamentId?: string;
   }): Promise<string> {
     const row = await prisma.game.create({
       data: {
@@ -89,6 +91,7 @@ export class GameEngine {
         status: 'ACTIVE',
         whiteRatingBefore: params.white.rating,
         blackRatingBefore: params.black.rating,
+        tournamentId: params.tournamentId ?? null,
       },
       select: { id: true },
     });
@@ -411,6 +414,19 @@ export class GameEngine {
           : {}),
       },
     });
+
+    // El torneo se entera después de que la partida quedó guardada: así la
+    // clasificación nunca se calcula sobre un resultado a medio escribir.
+    // Importación diferida porque el motor de torneos importa este módulo: el
+    // ciclo se rompe resolviéndolo recién cuando hace falta. El error se registra
+    // en vez de tragarse — un torneo que no avanza sin dejar rastro es peor que
+    // uno que falla ruidosamente.
+    try {
+      const { registrarResultado } = await import('../tournament/motor.js');
+      await registrarResultado(game.id, result);
+    } catch (error) {
+      console.error('[torneo] no se pudo registrar el resultado', game.id, error);
+    }
 
     this.broadcaster?.gameOver(game.id, {
       gameId: game.id,

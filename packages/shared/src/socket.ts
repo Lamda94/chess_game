@@ -36,7 +36,11 @@ export const chatSendSchema = z.object({
   body: z.string().trim().min(1).max(300),
 });
 
+export const tournamentIdSchema = z.object({ tournamentId: z.string().min(1) });
+
 export interface ClientToServerEvents {
+  'tournament:watch': (input: z.infer<typeof tournamentIdSchema>) => void;
+  'tournament:unwatch': (input: z.infer<typeof tournamentIdSchema>) => void;
   'queue:join': (input: QueueJoinInput) => void;
   'queue:leave': () => void;
   'game:sync': (input: z.infer<typeof gameIdSchema>) => void;
@@ -91,7 +95,15 @@ export interface SocketErrorPayload {
   message: string;
 }
 
+export interface TournamentUpdatePayload {
+  tournamentId: string;
+  /** Motivo del aviso, para que el cliente sepa qué volver a pedir. */
+  motivo: 'clasificacion' | 'ronda' | 'fin';
+  ronda?: number;
+}
+
 export interface ServerToClientEvents {
+  'tournament:update': (payload: TournamentUpdatePayload) => void;
   'queue:status': (payload: QueueStatusPayload) => void;
   'queue:matched': (payload: MatchedPayload) => void;
   'game:state': (payload: GameState) => void;
@@ -111,4 +123,8 @@ export interface SocketData {
 
 export function gameRoom(gameId: string): string {
   return `game:${gameId}`;
+}
+
+export function tournamentRoom(tournamentId: string): string {
+  return `tournament:${tournamentId}`;
 }

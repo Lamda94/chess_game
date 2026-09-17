@@ -12,6 +12,9 @@ import { gameRoutes } from './routes/games.js';
 import { profileRoutes } from './routes/profile.js';
 import { leaderboardRoutes } from './routes/leaderboard.js';
 import { trainingRoutes } from './routes/training.js';
+import { tournamentRoutes } from './routes/tournaments.js';
+import { socialRoutes } from './routes/social.js';
+import { moderationRoutes } from './routes/moderation.js';
 
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -73,6 +76,9 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(profileRoutes);
   await app.register(leaderboardRoutes);
   await app.register(trainingRoutes);
+  await app.register(tournamentRoutes);
+  await app.register(socialRoutes);
+  await app.register(moderationRoutes);
 
   return app;
 }

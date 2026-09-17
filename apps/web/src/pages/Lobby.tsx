@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PRESET_TIME_CONTROLS, categoryFor, formatTimeControl, CATEGORY_LABEL, type Category, type TimeControl } from '@gambito/shared';
 import { get } from '../api/client.js';
 import { useSession } from '../state/session.js';
+import { PanelAmigos, PanelDesafios } from '../components/Social.js';
 
 interface LiveGame {
   id: string;
@@ -75,6 +76,9 @@ export function Lobby() {
         </div>
       </section>
 
+      <PanelDesafios />
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
       <section className="flex flex-col gap-3.5">
         <div className="flex items-baseline justify-between">
           <h2 className="gb-display m-0 text-[22px]">Partidas en vivo</h2>
@@ -110,6 +114,9 @@ export function Lobby() {
           )}
         </div>
       </section>
+
+      <PanelAmigos />
+      </div>
     </div>
   );
 }

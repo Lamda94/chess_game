@@ -233,7 +233,7 @@ export function Practica() {
             <label htmlFor="nivel" className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
               Nivel del motor
             </label>
-            <span className="gb-mono text-sm" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-sm" style={{ color: 'var(--accent-text)' }}>
               {config.nivel} / 20
             </span>
           </div>
@@ -342,11 +342,11 @@ export function Practica() {
               MOTOR NIVEL {config.nivel}
             </span>
             {pensando ? (
-              <span className="gb-mono text-[11px]" style={{ color: 'var(--accent)' }}>PENSANDO…</span>
+              <span className="gb-mono text-[11px]" style={{ color: 'var(--accent-text)' }}>PENSANDO…</span>
             ) : null}
             <div className="flex-1" />
             {final ? (
-              <span className="gb-mono text-[11px]" style={{ color: 'var(--accent)' }}>
+              <span className="gb-mono text-[11px]" style={{ color: 'var(--accent-text)' }}>
                 {TERMINATION_LABEL[final.termination].toUpperCase()}
                 {final.winner ? ` · GANAN LAS ${final.winner === 'white' ? 'BLANCAS' : 'NEGRAS'}` : ''}
               </span>

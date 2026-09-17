@@ -223,20 +223,20 @@ export function Ranking() {
               borderTop: '1px solid var(--accent)',
             }}
           >
-            <span className="gb-mono text-sm" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-sm" style={{ color: 'var(--accent-text)' }}>
               {mio.data.fila.provisional ? '—' : mio.data.fila.posicion}
             </span>
             <span className="flex items-center gap-3">
               <Avatar username={mio.data.fila.username} url={mio.data.fila.avatarUrl} size={30} status="online" />
               <span className="text-sm">{mio.data.fila.username}</span>
-              <span className="text-[11px]" style={{ color: 'var(--accent)' }}>vos</span>
+              <span className="text-[11px]" style={{ color: 'var(--accent-text)' }}>vos</span>
               {mio.data.fila.provisional ? (
                 <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
                   faltan {10 - mio.data.fila.gamesPlayed} partidas para entrar
                 </span>
               ) : null}
             </span>
-            <span className="gb-mono text-right text-[15px] font-bold" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-right text-[15px] font-bold" style={{ color: 'var(--accent-text)' }}>
               {mio.data.fila.rating}
             </span>
             <span className="gb-mono text-right text-[13px]" style={{ color: 'var(--text-muted)' }}>

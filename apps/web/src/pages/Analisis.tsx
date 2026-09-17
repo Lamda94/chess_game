@@ -27,7 +27,7 @@ const ETIQUETAS: Record<Etiqueta, { texto: string; color: string }> = {
   brillante: { texto: 'Brillante', color: 'var(--cool)' },
   mejor: { texto: 'Mejor jugada', color: 'var(--success)' },
   buena: { texto: 'Buena', color: 'var(--text-muted)' },
-  imprecision: { texto: 'Imprecisión', color: 'var(--accent)' },
+  imprecision: { texto: 'Imprecisión', color: 'var(--accent-text)' },
   error: { texto: 'Error', color: '#e08a3c' },
   errorGrave: { texto: 'Error grave', color: 'var(--danger)' },
 };

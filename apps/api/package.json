@@ -34,7 +34,8 @@
     "zod": "^3.25.76",
     "fastify-plugin": "^5.0.1",
     "dotenv": "^16.4.7",
-    "@gambito/rating": "workspace:*"
+    "@gambito/rating": "workspace:*",
+    "@gambito/tournament": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.6",

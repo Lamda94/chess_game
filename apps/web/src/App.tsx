@@ -13,6 +13,11 @@ import { Perfil } from './pages/Perfil.js';
 import { Ranking } from './pages/Ranking.js';
 import { Entrenamiento } from './pages/Entrenamiento.js';
 import { Puzzles } from './pages/Puzzles.js';
+import { Torneos } from './pages/Torneos.js';
+import { TorneoCrear } from './pages/TorneoCrear.js';
+import { TorneoSala } from './pages/TorneoSala.js';
+import { Desafio } from './pages/Desafio.js';
+import { Moderacion } from './pages/Moderacion.js';
 
 /**
  * La práctica y el análisis son las dos pantallas que usan Stockfish y cargan
@@ -51,6 +56,7 @@ export function App() {
         <Route path="/elegir-nombre" element={<ElegirNombre />} />
         <Route path="/" element={<Privado><Lobby /></Privado>} />
         <Route path="/buscar" element={<Privado><Buscar /></Privado>} />
+        <Route path="/moderacion" element={<Privado><Moderacion /></Privado>} />
         <Route
           path="/practica"
           element={
@@ -67,6 +73,10 @@ export function App() {
         <Route path="/entrenamiento" element={<Privado><Entrenamiento /></Privado>} />
         <Route path="/entrenamiento/:slug" element={<Privado><Entrenamiento /></Privado>} />
         <Route path="/puzzles" element={<Privado><Puzzles /></Privado>} />
+        <Route path="/torneos" element={<Privado><Torneos /></Privado>} />
+        <Route path="/torneos/crear" element={<Privado><TorneoCrear /></Privado>} />
+        <Route path="/torneos/:id" element={<Privado><TorneoSala /></Privado>} />
+        <Route path="/desafio/:id" element={<Privado><Desafio /></Privado>} />
         <Route
           path="/analisis/:id"
           element={

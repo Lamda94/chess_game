@@ -216,7 +216,7 @@ export function Partida() {
 
         {over ? (
           <div className="gb-card flex flex-col gap-3" style={{ borderColor: 'var(--accent)' }}>
-            <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent)' }}>
+            <span className="gb-mono text-[11px] tracking-[0.14em]" style={{ color: 'var(--accent-text)' }}>
               {TERMINATION_LABEL[over.termination].toUpperCase()}
             </span>
             <div className="flex items-end justify-between gap-4">
@@ -415,7 +415,7 @@ function PlayerBar({
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium">
           {player.username}
-          {you ? <span style={{ color: 'var(--accent)', fontSize: 12 }}> · vos</span> : null}
+          {you ? <span style={{ color: 'var(--accent-text)', fontSize: 12 }}> · vos</span> : null}
         </span>
         <span className="flex items-center gap-2">
           <RatingBadge rating={player.rating} provisional={player.provisional} />

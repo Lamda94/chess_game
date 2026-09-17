@@ -32,6 +32,40 @@ export function Board({
 }: BoardProps) {
   const [dragging, setDragging] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Navegación por teclado. Cada casilla ya es un botón, así que el tabulador
+   * pasaría por las 64 de a una: las flechas mueven el foco por el tablero y el
+   * tabulador salta afuera, que es como se espera que funcione una grilla.
+   */
+  const alPresionar = (evento: React.KeyboardEvent<HTMLDivElement>) => {
+    const teclas: Record<string, [number, number]> = {
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+    };
+    const paso = teclas[evento.key];
+    if (!paso) return;
+
+    const actual = document.activeElement as HTMLElement | null;
+    const casillas = Array.from(
+      boardRef.current?.querySelectorAll<HTMLButtonElement>('[role="gridcell"]') ?? [],
+    );
+    const indice = actual ? casillas.indexOf(actual as HTMLButtonElement) : -1;
+    if (indice === -1) {
+      casillas[0]?.focus();
+      evento.preventDefault();
+      return;
+    }
+
+    const columna = indice % 8;
+    const fila = Math.floor(indice / 8);
+    const siguienteColumna = Math.min(7, Math.max(0, columna + paso[0]));
+    const siguienteFila = Math.min(7, Math.max(0, fila + paso[1]));
+    casillas[siguienteFila * 8 + siguienteColumna]?.focus();
+    evento.preventDefault();
+  };
   // Todo el tamaño cuelga de una variable CSS: las casillas y las piezas se
   // derivan de ella, así el tablero es fluido sin medir nada en JavaScript.
   const sized = { '--gb-board': size } as React.CSSProperties;
@@ -53,7 +87,8 @@ export function Board({
         ref={boardRef}
         className="gb-board"
         role="grid"
-        aria-label="Tablero de ajedrez"
+        aria-label="Tablero de ajedrez. Movete con las flechas y jugá con Enter."
+        onKeyDown={alPresionar}
       >
         {ranks.map((rank) => (
           <div className="gb-board__row" role="row" key={rank}>
@@ -73,6 +108,7 @@ export function Board({
                   key={id}
                   type="button"
                   role="gridcell"
+                  tabIndex={file === files[0] && rank === ranks[0] ? 0 : -1}
                   aria-label={description}
                   aria-selected={board.selected === id}
                   className={[

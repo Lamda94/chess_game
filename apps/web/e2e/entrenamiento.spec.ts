@@ -143,3 +143,28 @@ test('la lección no se desborda de su tarjeta', async ({ page }) => {
   );
   expect(desborde).toBe(false);
 });
+
+test('el texto de la lección sigue siendo legible en pantallas angostas', async ({ page }) => {
+  await registrar(page, 'ent_ancho');
+
+  /**
+   * El corte no puede mirar el ancho de la ventana: a 1280px la ventana pasa
+   * cualquier breakpoint, pero la columna del medio comparte la pantalla con la
+   * lista de rutas y el panel de logros, y al tablero le quedaban 420px fijos.
+   * El texto terminaba en una tira de una palabra por renglón. Se resuelve con
+   * una consulta de contenedor, y esto lo verifica donde dolía.
+   */
+  for (const ancho of [1180, 1280, 1920]) {
+    await page.setViewportSize({ width: ancho, height: 900 });
+    await page.goto('/entrenamiento/la-clavada');
+    await expect(page.getByText('PASO 1 DE 2')).toBeVisible();
+
+    const tarjeta = page.locator('section').filter({ hasText: 'PASO 1 DE 2' }).first();
+    const caja = await tarjeta.locator('p').first().boundingBox();
+    expect(caja, `a ${ancho}px no se encontró el texto`).not.toBeNull();
+    expect(
+      Math.round(caja!.width),
+      `a ${ancho}px el texto quedó en ${Math.round(caja!.width)}px de ancho`,
+    ).toBeGreaterThan(260);
+  }
+});
