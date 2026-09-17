@@ -1,0 +1,46 @@
+# Caddy saca y renueva el certificado TLS solo, siempre que GAMBITO_DOMAIN
+# apunte a este servidor y los puertos 80 y 443 estén abiertos.
+{$GAMBITO_DOMAIN} {
+	encode zstd gzip
+
+	# La API cuelga del mismo origen bajo /api. Se le quita el prefijo porque
+	# el backend expone las rutas en la raíz (/auth/login, no /api/auth/login).
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:3000
+	}
+
+	# Socket.IO va sin reescribir. Caddy negocia el upgrade a WebSocket solo.
+	handle /socket.io/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		root * /srv
+
+		# Los nombres de los assets llevan hash, así que se pueden cachear para
+		# siempre.
+		@inmutables path /assets/* /engine/*
+		header @inmutables Cache-Control "public, max-age=31536000, immutable"
+
+		# Todo lo demás se revalida. Es sobre todo por el index.html, que es el
+		# que apunta a los assets nuevos en cada despliegue: cachearlo dejaría a
+		# la gente con la versión vieja. Va por negación y no por nombre porque
+		# la ruta que se pide es `/`, no `/index.html` — apuntarle al nombre del
+		# archivo, como estaba, no lo agarraba nunca.
+		@revalidar not path /assets/* /engine/*
+		header @revalidar Cache-Control "no-cache"
+
+		# La app es de una sola página: cualquier ruta desconocida la resuelve
+		# el router del cliente, no un 404 del servidor.
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

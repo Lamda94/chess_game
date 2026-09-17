@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.mail
+apps/web/public/engine
+apps/web/e2e/capturas
+apps/web/e2e/recorrido
+apps/web/test-results
+**/.env
+**/.turbo

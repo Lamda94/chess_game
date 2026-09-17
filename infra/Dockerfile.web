@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+# El front no necesita Node en producción: son archivos estáticos. Esta imagen
+# termina siendo Caddy, que además hace de proxy hacia la API — el front habla
+# siempre con su propio origen, así las cookies de sesión son de primera parte y
+# el navegador no necesita ninguna excepción de CORS.
+FROM node:22-slim AS build
+ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
+RUN corepack enable
+WORKDIR /repo
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+COPY packages/chess-core/package.json packages/chess-core/
+COPY packages/rating/package.json packages/rating/
+COPY packages/tournament/package.json packages/tournament/
+COPY packages/ui/package.json packages/ui/
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+COPY . .
+# El `prebuild` de apps/web copia Stockfish y su licencia a public/engine.
+RUN pnpm turbo run build --filter=@gambito/web...
+
+FROM caddy:2-alpine AS runtime
+COPY --from=build /repo/apps/web/dist /srv
+COPY infra/Caddyfile /etc/caddy/Caddyfile

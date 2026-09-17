@@ -6,7 +6,8 @@ coverage/
 *.tsbuildinfo
 .env
 .env.*
-!.env.example
+# Las plantillas sí se versionan: .env.example, infra/.env.prod.example…
+!.env*.example
 .DS_Store
 playwright-report/
 test-results/
@@ -22,3 +23,6 @@ apps/*/.claude/
 # El motor se copia desde node_modules en cada build
 apps/web/public/engine/
 .mail/
+
+# Variables reales del despliegue.
+infra/.env.prod

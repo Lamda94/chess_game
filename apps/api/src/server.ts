@@ -39,7 +39,14 @@ export async function buildServer(): Promise<FastifyInstance> {
         auth: fastifyOauth2.GOOGLE_CONFIGURATION,
       },
       startRedirectPath: '/auth/google',
-      callbackUri: `http://${env.HOST === '0.0.0.0' ? 'localhost' : env.HOST}:${env.PORT}/auth/google/callback`,
+      /**
+       * La vuelta de Google entra por el origen del front, no por el de la API.
+       * En desarrollo lo reenvía el proxy de Vite y en producción el de Caddy;
+       * en los dos casos se le quita el prefijo /api. Apuntar directo al puerto
+       * de la API —como estaba— funcionaba en local por casualidad y dejaba el
+       * acceso con Google roto en cuanto se desplegaba detrás de un dominio.
+       */
+      callbackUri: `${env.WEB_ORIGIN}/api/auth/google/callback`,
       // PKCE protege el intercambio del código aunque alguien logre interceptarlo.
       pkce: 'S256',
     });

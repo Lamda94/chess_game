@@ -1,0 +1,77 @@
+# syntax=docker/dockerfile:1
+
+# Debian y no Alpine a propósito: @node-rs/argon2 y los motores de Prisma traen
+# binarios precompilados contra glibc. En musl habría que compilarlos.
+FROM node:22-slim AS base
+ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
+RUN corepack enable && apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- dependencias -----------------------------------------------------------
+# Sólo los manifiestos: así cambiar una línea de código no invalida esta capa,
+# que es la que tarda.
+FROM base AS deps
+WORKDIR /repo
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+COPY packages/chess-core/package.json packages/chess-core/
+COPY packages/rating/package.json packages/rating/
+COPY packages/tournament/package.json packages/tournament/
+COPY packages/ui/package.json packages/ui/
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# --- compilación ------------------------------------------------------------
+FROM deps AS build
+WORKDIR /repo
+COPY . .
+RUN pnpm --filter @gambito/api exec prisma generate
+# El `...` arrastra los paquetes de los que depende la API.
+RUN pnpm turbo run build --filter=@gambito/api...
+
+# --- dependencias de producción --------------------------------------------
+# Se instalan aparte para que la imagen final no cargue con TypeScript, vitest
+# ni el resto del andamiaje.
+FROM base AS prod-deps
+WORKDIR /repo
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+COPY packages/chess-core/package.json packages/chess-core/
+COPY packages/rating/package.json packages/rating/
+COPY packages/tournament/package.json packages/tournament/
+COPY packages/ui/package.json packages/ui/
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prod --ignore-scripts
+
+# --- imagen final -----------------------------------------------------------
+FROM base AS runtime
+WORKDIR /repo
+ENV NODE_ENV=production
+
+# La etapa anterior sólo tiene manifiestos y node_modules, así que se copia
+# entera. Enumerar los node_modules de cada paquete fallaba: los que no tienen
+# dependencias de producción —rating y tournament— ni siquiera tienen carpeta.
+COPY --from=prod-deps /repo ./
+
+COPY --from=build /repo/apps/api/dist apps/api/dist
+COPY --from=build /repo/apps/api/prisma apps/api/prisma
+COPY --from=build /repo/packages/shared/dist packages/shared/dist
+COPY --from=build /repo/packages/chess-core/dist packages/chess-core/dist
+COPY --from=build /repo/packages/rating/dist packages/rating/dist
+COPY --from=build /repo/packages/tournament/dist packages/tournament/dist
+
+# El cliente de Prisma se regenera acá: el `--prod` anterior se lleva puesto lo
+# que hubiera generado la etapa de compilación.
+RUN pnpm --filter @gambito/api exec prisma generate
+
+COPY infra/arrancar-api.sh /usr/local/bin/arrancar-api
+RUN chmod +x /usr/local/bin/arrancar-api
+
+USER node
+EXPOSE 3000
+CMD ["arrancar-api"]

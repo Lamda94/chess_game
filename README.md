@@ -235,16 +235,61 @@ para el contorno que identifica un componente.
 Las piezas se verifican aparte y con otro criterio: lo que recorta una dama blanca sobre una
 casilla clara no es su relleno —1,26:1— sino su contorno oscuro, que da 10:1.
 
+## Desplegar en un VPS
+
+Todo corre en Docker: Caddy al frente, la API, Postgres y Redis. Lo único que sale a internet
+es Caddy — Postgres y Redis no publican puertos y sólo se llegan por la red interna.
+
+```bash
+cp infra/.env.prod.example infra/.env.prod   # completar; no se versiona
+openssl rand -base64 48                      # uno para JWT_SECRET, otro para COOKIE_SECRET
+
+docker compose -f infra/docker-compose.prod.yml --env-file infra/.env.prod up -d --build
+```
+
+Antes hay que apuntar el dominio por DNS a la IP del servidor y dejar abiertos el 80 y el
+443. Caddy saca el certificado solo y lo renueva; no hay que tocar nada de TLS.
+
+**Por qué hay un proxy delante.** El front habla siempre con su propio origen: pide `/api/…`
+y abre el socket contra el mismo dominio. Así las cookies de sesión son de primera parte y el
+navegador no necesita ninguna excepción de CORS. Eso, que en desarrollo resuelve el proxy de
+Vite, en producción lo resuelve Caddy: sirve los archivos estáticos, manda `/api/*` al
+backend quitándole el prefijo, y `/socket.io/*` tal cual, con el upgrade a WebSocket.
+
+Las migraciones corren al arrancar el contenedor, antes de levantar el servidor. Con una sola
+instancia es lo correcto y lo más simple; si alguna vez hay réplicas hay que sacarlo de ahí,
+porque dos arrancando a la vez intentarían migrar en paralelo. En ese caso va como paso de
+release aparte con `pnpm --filter @gambito/api prisma:deploy`.
+
+Para actualizar:
+
+```bash
+git pull
+docker compose -f infra/docker-compose.prod.yml --env-file infra/.env.prod up -d --build
+```
+
+Si usás Google OAuth, el redirect URI autorizado en la consola de Google tiene que ser
+exactamente `https://TU_DOMINIO/api/auth/google/callback` — entra por el dominio del front,
+no por el de la API.
+
+La misma suite de navegador sirve para probar un despliegue:
+
+```bash
+E2E_BASE_URL=https://tu-dominio pnpm --filter @gambito/web e2e e2e/partida.spec.ts
+```
+
 ## Lo que todavía no está
 
 Las cuatro fases del plan están terminadas. Lo que queda son límites conocidos, no fases.
 
 No hay archivo de licencia. Stockfish es GPLv3 y viaja al navegador de cada visitante, así
-que publicar el proyecto obliga a decidir bajo qué licencia sale; mientras el repositorio sea
-privado la cuestión no aprieta.
+que publicar el proyecto obliga a decidir bajo qué licencia sale.
 
-Tampoco hay nada para desplegar: `infra/` levanta Postgres y Redis para desarrollo, pero no
-hay Dockerfile de la API ni del front ni configuración de producción.
+No hay copias de seguridad automáticas de la base. Los datos viven en un volumen de Docker
+(`gambito_postgres`), que sobrevive a los despliegues pero no a que se pierda el servidor.
+
+La imagen de la API pesa unos 800 MB, casi todo motores de Prisma. Se puede recortar bastante
+con `binaryTargets` acotado, pero para un VPS no molesta.
 
 La moderación no tiene cola de denuncias: no hay forma de que alguien reporte una partida o
 un mensaje, así que el panel sólo permite buscar y suspender. Un botón de denuncia en la
