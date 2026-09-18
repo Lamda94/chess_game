@@ -139,10 +139,28 @@ export class Matchmaker {
   }
 
   private async sweepAll(): Promise<void> {
+    /**
+     * Sólo las colas. En Redis el `*` del patrón cruza los dos puntos, así que
+     * `mm:*:*:*` también atrapaba los auxiliares —`:joined` y, sobre todo, el
+     * candado— y al hacerles `ZRANGE` la respuesta era WRONGTYPE: una excepción
+     * sin capturar en una tarea de fondo, que tumbaba el proceso entero.
+     *
+     * Por eso ahora se descartan por sufijo y el candado vive bajo otro prefijo,
+     * donde ningún patrón de colas puede alcanzarlo.
+     */
     const keys = await redis.keys('mm:*:*:*');
-    const queues = keys.filter((k) => !k.endsWith(':joined') && k !== 'mm:tickets');
+    const queues = keys.filter(
+      (k) => !k.endsWith(':joined') && !k.endsWith(':lock') && k !== 'mm:tickets',
+    );
+
     for (const key of queues) {
-      await this.trySweep(key);
+      try {
+        await this.trySweep(key);
+      } catch (error) {
+        // Una cola con datos raros no puede llevarse puesto el emparejamiento de
+        // todas las demás, ni el servidor.
+        console.error('[matchmaking] falló el barrido de', key, error);
+      }
     }
   }
 
@@ -151,7 +169,9 @@ export class Matchmaker {
    * vez podrían sacar al mismo jugador para dos partidas distintas.
    */
   private async trySweep(key: string): Promise<void> {
-    const lockKey = `${key}:lock`;
+    // Fuera del espacio de nombres de las colas, para que un barrido no lo
+    // confunda con una de ellas.
+    const lockKey = `mmlock:${key}`;
     const acquired = await redis.set(lockKey, '1', 'PX', LOCK_TTL_MS, 'NX');
     if (!acquired) return;
 

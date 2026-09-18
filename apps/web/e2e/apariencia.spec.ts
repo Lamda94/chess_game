@@ -161,13 +161,15 @@ test('cada juego y cada tema del catálogo se puede elegir y se aplica', async (
 
   await page.getByRole('tab', { name: 'Piezas' }).click();
   for (const info of PIECE_SET_INFO) {
-    await page.getByRole('button', { name: info.label }).click();
-    await expect(page.getByRole('button', { name: info.label })).toHaveAttribute('aria-pressed', 'true');
+    // `exact`: hay etiquetas que son prefijo de otra —"Pixel" y "Pixel noche"—.
+    const opcion = page.getByRole('button', { name: info.label, exact: true });
+    await opcion.click();
+    await expect(opcion).toHaveAttribute('aria-pressed', 'true');
   }
 
   await page.getByRole('tab', { name: 'Tablero' }).click();
   for (const info of BOARD_THEME_INFO) {
-    await page.getByRole('button', { name: info.label }).click();
+    await page.getByRole('button', { name: info.label, exact: true }).click();
     // El color del tema tiene que llegar a la variable que usa el tablero.
     await expect
       .poll(async () =>

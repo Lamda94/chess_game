@@ -75,6 +75,52 @@ function pathsMinimal(type: PieceType): string[] {
   }
 }
 
+/**
+ * Piezas pixeladas.
+ *
+ * Se diseñaron sobre una retícula de texto y se convirtieron a `path` con un
+ * script: dibujar con caracteres deja ver la silueta mientras se trabaja, que es
+ * justo lo que falta al escribir coordenadas a ciegas.
+ *
+ * Devuelve dos trazos: el contorno —la misma retícula dilatada una celda— y el
+ * relleno encima. Un `stroke` no sirve acá, porque dibujaría también los bordes
+ * internos de cada rectángulo y la pieza queda rayada.
+ */
+function pathsPixel(type: PieceType): [borde: string, relleno: string] {
+  switch (type) {
+    case 'p':
+      return [
+        'M18 9h9v3h-9zM15 12h15v3h-15zM12 15h21v3h-21zM12 18h21v3h-21zM15 21h15v3h-15zM12 24h21v3h-21zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M18 12h9v3h-9zM15 15h15v3h-15zM15 18h15v3h-15zM18 21h9v3h-9zM15 24h15v3h-15zM12 27h21v3h-21zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+    case 'r':
+      return [
+        'M12 6h3v3h-3zM18 6h3v3h-3zM24 6h3v3h-3zM30 6h3v3h-3zM9 9h27v3h-27zM9 12h27v3h-27zM9 15h27v3h-27zM9 18h27v3h-27zM9 21h27v3h-27zM9 24h27v3h-27zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M12 9h3v3h-3zM18 9h3v3h-3zM24 9h3v3h-3zM30 9h3v3h-3zM12 12h21v3h-21zM12 15h21v3h-21zM12 18h21v3h-21zM12 21h21v3h-21zM12 24h21v3h-21zM12 27h21v3h-21zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+    case 'n':
+      return [
+        'M21 3h6v3h-6zM18 6h12v3h-12zM15 9h18v3h-18zM12 12h21v3h-21zM9 15h24v3h-24zM6 18h27v3h-27zM6 21h27v3h-27zM9 24h24v3h-24zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M21 6h6v3h-6zM18 9h12v3h-12zM15 12h15v3h-15zM12 15h18v3h-18zM9 18h21v3h-21zM9 21h3v3h-3zM15 21h15v3h-15zM15 24h15v3h-15zM12 27h18v3h-18zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+    case 'b':
+      return [
+        'M21 3h3v3h-3zM18 6h9v3h-9zM15 9h15v3h-15zM12 12h21v3h-21zM12 15h21v3h-21zM12 18h21v3h-21zM15 21h15v3h-15zM12 24h21v3h-21zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M21 6h3v3h-3zM18 9h9v3h-9zM15 12h6v3h-6zM24 12h6v3h-6zM15 15h15v3h-15zM15 18h15v3h-15zM18 21h9v3h-9zM15 24h15v3h-15zM12 27h21v3h-21zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+    case 'q':
+      return [
+        'M9 3h3v3h-3zM15 3h3v3h-3zM21 3h3v3h-3zM27 3h3v3h-3zM33 3h3v3h-3zM6 6h33v3h-33zM6 9h33v3h-33zM9 12h27v3h-27zM12 15h21v3h-21zM12 18h21v3h-21zM12 21h21v3h-21zM9 24h27v3h-27zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M9 6h3v3h-3zM15 6h3v3h-3zM21 6h3v3h-3zM27 6h3v3h-3zM33 6h3v3h-3zM9 9h27v3h-27zM12 12h21v3h-21zM15 15h15v3h-15zM15 18h15v3h-15zM15 21h15v3h-15zM12 24h21v3h-21zM12 27h21v3h-21zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+    case 'k':
+      return [
+        'M21 3h3v3h-3zM15 6h15v3h-15zM12 9h21v3h-21zM15 12h15v3h-15zM12 15h21v3h-21zM9 18h27v3h-27zM12 21h21v3h-21zM12 24h21v3h-21zM9 27h27v3h-27zM6 30h33v3h-33zM6 33h33v3h-33zM9 36h27v3h-27z',
+        'M21 6h3v3h-3zM15 9h15v3h-15zM21 12h3v3h-3zM15 15h15v3h-15zM12 18h21v3h-21zM15 21h15v3h-15zM15 24h15v3h-15zM12 27h21v3h-21zM9 30h27v3h-27zM9 33h27v3h-27z',
+      ];
+  }
+}
+
 export interface PieceProps {
   type: PieceType;
   color: Color;
@@ -87,6 +133,18 @@ export interface PieceProps {
 export function Piece({ type, color, size = '100%', set = APARIENCIA_POR_DEFECTO.pieceSet }: PieceProps) {
   const juego = juegoDePiezas(set);
   const tinta = color === 'white' ? juego.blanca : juego.negra;
+
+  // El pixelado se pinta distinto: dos capas planas, sin trazo y sin suavizado.
+  if (juego.geometria === 'pixel') {
+    const [borde, relleno] = pathsPixel(type);
+    return (
+      <svg viewBox="0 0 45 45" width={size} height={size} aria-hidden="true" shapeRendering="crispEdges" style={{ display: 'block', pointerEvents: 'none' }}>
+        <path d={borde} fill={tinta.stroke} />
+        <path d={relleno} fill={tinta.fill === 'none' ? 'transparent' : tinta.fill} />
+      </svg>
+    );
+  }
+
   const dibujos = juego.geometria === 'minimal' ? pathsMinimal(type) : paths(type);
   return (
     <svg

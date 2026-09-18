@@ -23,6 +23,8 @@ export const PIECE_SETS = [
   'nitidas',
   'minimal',
   'silueta',
+  'pixel',
+  'pixel-noche',
 ] as const;
 export type PieceSet = (typeof PIECE_SETS)[number];
 
@@ -31,7 +33,7 @@ export interface PieceSetInfo {
   label: string;
   descripcion: string;
   /** Qué siluetas usa. */
-  geometria: 'staunton' | 'minimal';
+  geometria: 'staunton' | 'minimal' | 'pixel';
   blanca: { fill: string; stroke: string };
   negra: { fill: string; stroke: string };
   grosor: number;
@@ -127,6 +129,26 @@ export const PIECE_SET_INFO: readonly PieceSetInfo[] = [
     blanca: { fill: '#ffffff', stroke: '#111111' },
     negra: { fill: '#111111', stroke: '#111111' },
     grosor: 2,
+    sombra: false,
+  },
+  {
+    id: 'pixel',
+    label: 'Pixel',
+    descripcion: 'Dibujadas sobre una retícula, como en un juego de 8 bits.',
+    geometria: 'pixel',
+    blanca: { fill: '#f6f1e4', stroke: '#2f2a24' },
+    negra: { fill: '#232228', stroke: '#000000' },
+    grosor: 0,
+    sombra: false,
+  },
+  {
+    id: 'pixel-noche',
+    label: 'Pixel noche',
+    descripcion: 'La misma retícula, en ámbar y azul.',
+    geometria: 'pixel',
+    blanca: { fill: '#e8b75c', stroke: '#4a3413' },
+    negra: { fill: '#4f7fd6', stroke: '#16244a' },
+    grosor: 0,
     sombra: false,
   },
 ];
