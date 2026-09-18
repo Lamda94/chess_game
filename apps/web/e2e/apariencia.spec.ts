@@ -106,3 +106,41 @@ test('un desafío se juega con el tiempo elegido, no con uno fijo', async ({ bro
   await mover(a, 'e2', 'e4');
   await expect(b.getByText('e4', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
 });
+
+test('se llega a personalizar desde cualquier pantalla', async ({ page }) => {
+  /**
+   * El acceso vivía sólo dentro del perfil propio y no lo encontraba nadie: la
+   * función estaba hecha y el usuario la pedía como si no existiera.
+   */
+  await registrar(page, 'apc');
+  for (const ruta of ['/', '/torneos', '/ranking']) {
+    await page.goto(ruta);
+    await expect(page.getByRole('link', { name: 'Personalizar piezas y tablero' })).toBeVisible();
+  }
+  await page.getByRole('link', { name: 'Personalizar piezas y tablero' }).click();
+  await expect(page.getByRole('heading', { name: 'Apariencia' })).toBeVisible();
+});
+
+test('el juego elegido llega al tablero de juego, no sólo al catálogo', async ({ page }) => {
+  await registrar(page, 'apd');
+
+  const dibujoDelTablero = () =>
+    page.evaluate(() => document.querySelector('[role="grid"] svg path')?.getAttribute('d')?.slice(0, 30) ?? '');
+
+  await page.goto('/apariencia');
+  await page.getByRole('button', { name: /Clásicas/ }).click();
+  await page.waitForTimeout(400);
+  await page.goto('/practica');
+  await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
+  const clasicas = await dibujoDelTablero();
+
+  await page.goto('/apariencia');
+  await page.getByRole('button', { name: /Minimal/ }).click();
+  await page.waitForTimeout(400);
+  await page.goto('/practica');
+  await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
+  const minimal = await dibujoDelTablero();
+
+  expect(clasicas).not.toBe('');
+  expect(minimal, 'el tablero siguió dibujando las mismas piezas').not.toBe(clasicas);
+});

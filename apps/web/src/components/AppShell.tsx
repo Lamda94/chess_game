@@ -65,6 +65,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         ) : null}
 
+        {/*
+          Personalizar el tablero vivía sólo en un botón dentro del perfil propio,
+          y ahí no lo encuentra nadie. Va al lado del tema, que es donde se buscan
+          los ajustes de cómo se ve la app.
+        */}
+        <Link
+          to="/apariencia"
+          aria-label="Personalizar piezas y tablero"
+          title="Personalizar piezas y tablero"
+          className="flex h-11 w-11 items-center justify-center rounded-[10px]"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        >
+          {/* Un tablero en miniatura: dice de qué son estos ajustes mejor que un engranaje. */}
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2.5" fill="none" stroke="var(--text-muted)" strokeWidth="1.6" />
+            {/* Damero de 2x2: a 18px un 3x3 se empasta y queda un cuadro borroso. */}
+            <path d="M4.5 4.5h7.5v7.5H4.5zM12 12h7.5v7.5H12z" fill="var(--text-muted)" />
+          </svg>
+        </Link>
+
         <button
           type="button"
           onClick={toggle}
