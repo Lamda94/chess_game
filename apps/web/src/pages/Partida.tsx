@@ -194,6 +194,9 @@ export function Partida() {
             orientation={orientation}
             lastMove={lastSquares}
             size={BOARD_SIZE}
+            // Con menos de diez segundos no se anima: en bullet, 140 ms entre ver
+            // la jugada y poder responder son 140 ms que no sobran.
+            animateMoves={displayed(orientation) > 10_000}
           />
           <PlayerBar
             state={state}

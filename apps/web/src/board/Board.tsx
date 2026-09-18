@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FILES, RANKS, isLightSquare, type PieceType, type Square } from '@gambito/chess-core';
 import type { Color } from '@gambito/shared';
 import { Piece, pieceName } from './pieces.js';
@@ -19,6 +19,11 @@ export interface BoardProps {
   showCoordinates?: boolean;
   /** Flechas dibujadas encima del tablero, para señalar jugadas sugeridas. */
   arrows?: Array<{ from: Square; to: Square; color?: string }>;
+  /**
+   * Deslizar la pieza que acaba de moverse. Se apaga con poco reloj: en bullet,
+   * 140 ms entre ver la jugada y poder responder son 140 ms que no sobran.
+   */
+  animateMoves?: boolean;
 }
 
 const PROMOTION_CHOICES: PieceType[] = ['q', 'r', 'b', 'n'];
@@ -30,6 +35,7 @@ export function Board({
   size = 'min(560px, calc(100vw - 32px))',
   showCoordinates = true,
   arrows = [],
+  animateMoves = true,
 }: BoardProps) {
   const [dragging, setDragging] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -82,6 +88,39 @@ export function Board({
     }
     return map;
   }, [board.game]);
+
+  /**
+   * Deslizamiento de la jugada recién hecha.
+   *
+   * La pieza ya está dibujada en su casilla de destino, así que no hace falta
+   * moverla: arranca desplazada hacia el origen y se deja caer a su sitio. Eso
+   * evita tener que seguirle la pista a cada pieza entre una posición y la
+   * siguiente, que es lo caro y lo frágil.
+   *
+   * El contador fuerza el remonte del elemento, y sin eso la animación sólo se
+   * vería la primera vez: el navegador no repite una animación que ya terminó
+   * sobre el mismo nodo.
+   */
+  const [pulso, setPulso] = useState(0);
+  const jugadaAnterior = useRef<string | null>(null);
+
+  useEffect(() => {
+    const clave = lastMove ? `${lastMove.from}${lastMove.to}` : null;
+    if (clave === jugadaAnterior.current) return;
+    jugadaAnterior.current = clave;
+    setPulso((n) => n + 1);
+  }, [lastMove]);
+
+  const deslizamiento = useMemo(() => {
+    if (!animateMoves || !lastMove || dragging) return null;
+    const columna = (sq: Square) => files.indexOf(sq[0] as (typeof files)[number]);
+    const fila = (sq: Square) => ranks.indexOf(sq[1] as (typeof ranks)[number]);
+    const dx = columna(lastMove.to) - columna(lastMove.from);
+    const dy = fila(lastMove.to) - fila(lastMove.from);
+    if (dx === 0 && dy === 0) return null;
+    // Negativos: de dónde viene, no a dónde va.
+    return { casilla: lastMove.to, dx: -dx, dy: -dy };
+  }, [animateMoves, dragging, files, lastMove, ranks]);
 
   return (
     <div className="gb-board-wrap" style={sized}>
@@ -145,7 +184,17 @@ export function Board({
 
                   {piece ? (
                     <span
-                      className="gb-square__piece"
+                      key={deslizamiento?.casilla === id ? `desliza-${pulso}` : 'quieta'}
+                      className={
+                        deslizamiento?.casilla === id
+                          ? 'gb-square__piece gb-square__piece--desliza'
+                          : 'gb-square__piece'
+                      }
+                      style={
+                        deslizamiento?.casilla === id
+                          ? ({ '--gb-dx': deslizamiento.dx, '--gb-dy': deslizamiento.dy } as React.CSSProperties)
+                          : undefined
+                      }
                       draggable={board.selected === id || true}
                       onDragStart={() => {
                         setDragging(id);

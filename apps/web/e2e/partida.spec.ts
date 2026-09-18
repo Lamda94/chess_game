@@ -155,3 +155,58 @@ test('el reloj no se sale de su recuadro en ningún ancho', async ({ browser }) 
     await ctxB.close();
   }
 });
+
+test('la pieza que se mueve se desliza hasta su casilla', async ({ browser }) => {
+  /**
+   * No se comprueba con una captura: la animación dura 140 ms y sacar una foto
+   * tarda más que eso. Se mide el `transform` mientras corre, que además dice si
+   * el desplazamiento es el correcto y no sólo si hay movimiento.
+   */
+  const ctxA = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const ctxB = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const a = await ctxA.newPage();
+  const b = await ctxB.newPage();
+  await registrar(a, 'anim_a');
+  await registrar(b, 'anim_b');
+
+  await a.getByRole('button', { name: '10+0', exact: true }).click();
+  await b.getByRole('button', { name: '10+0', exact: true }).click();
+  await a.waitForURL(/\/partida\//, { timeout: 40_000 });
+  const gameId = a.url().split('/partida/')[1]!;
+  const blancas = (await colorDe(a, gameId)) === 'white' ? a : b;
+  const negras = blancas === a ? b : a;
+
+  await mover(blancas, 'e2', 'e4');
+
+  // Visto desde el rival, que es quien recibe la jugada por el socket.
+  const enVuelo = await negras.evaluate(() => {
+    const p = document.querySelector('.gb-square__piece--desliza') as HTMLElement | null;
+    if (!p) return null;
+    return {
+      dx: p.style.getPropertyValue('--gb-dx'),
+      dy: p.style.getPropertyValue('--gb-dy'),
+      transform: getComputedStyle(p).transform,
+    };
+  });
+
+  expect(enVuelo, 'ninguna pieza quedó marcada como deslizándose').not.toBeNull();
+  // e2->e4: dos filas y ninguna columna. El signo dice que viene de atrás.
+  expect(enVuelo!.dx).toBe('0');
+  expect(Math.abs(Number(enVuelo!.dy))).toBe(2);
+  expect(enVuelo!.transform, 'la pieza no llegó a desplazarse').not.toBe('none');
+
+  // Y termina quieta en su casilla, sin quedar corrida.
+  await expect(negras.getByText('e4', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+  await negras.waitForTimeout(400);
+  const alFinal = await negras.evaluate(() => {
+    const casilla = [...document.querySelectorAll('[role="gridcell"]')].find((c) =>
+      c.getAttribute('aria-label')?.startsWith('e4,'),
+    );
+    const p = casilla?.querySelector('.gb-square__piece') as HTMLElement | null;
+    return p ? getComputedStyle(p).transform : 'sin pieza';
+  });
+  expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(alFinal);
+
+  await ctxA.close();
+  await ctxB.close();
+});

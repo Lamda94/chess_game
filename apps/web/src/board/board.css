@@ -133,3 +133,28 @@
   pointer-events: none;
   z-index: 2;
 }
+
+/*
+ * Deslizamiento de la jugada recién hecha.
+ *
+ * La pieza ocupa el 88% de la casilla, así que un salto de casilla equivale a
+ * 100/88 de su propio ancho: de ahí el 113.6364%. Atarlo a ese número y no a un
+ * valor suelto evita que la animación se desalinee si cambia el tamaño relativo
+ * de la pieza.
+ *
+ * `prefers-reduced-motion` ya la desactiva desde tokens.css, junto con el resto.
+ */
+@keyframes gb-deslizar {
+  from {
+    transform: translate(calc(var(--gb-dx) * 113.6364%), calc(var(--gb-dy) * 113.6364%));
+  }
+  to {
+    transform: none;
+  }
+}
+
+.gb-square__piece--desliza {
+  animation: gb-deslizar 140ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Por encima del resto mientras viaja, para que no pase por debajo de otra pieza. */
+  z-index: 2;
+}
