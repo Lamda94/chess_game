@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { colorDe, mover } from './ayudas.js';
+import { BOARD_THEME_INFO, PIECE_SET_INFO } from '@gambito/shared';
 
 const TAG = Math.random().toString(36).slice(2, 7);
 
@@ -28,7 +29,8 @@ test('elegir piezas y tablero cambia el tablero de verdad', async ({ page }) => 
     getComputedStyle(document.documentElement).getPropertyValue('--board-light').trim(),
   );
 
-  await page.getByRole('button', { name: /Bosque/ }).click();
+  await page.getByRole('tab', { name: 'Tablero' }).click();
+  await page.getByRole('button', { name: 'Bosque' }).click();
   await expect
     .poll(async () =>
       page.evaluate(() =>
@@ -37,15 +39,18 @@ test('elegir piezas y tablero cambia el tablero de verdad', async ({ page }) => 
     )
     .not.toBe(colorInicial);
 
-  await page.getByRole('button', { name: /Minimal/ }).click();
-  await expect(page.getByRole('button', { name: /Minimal/ })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('tab', { name: 'Piezas' }).click();
+  await page.getByRole('button', { name: 'Minimal' }).click();
+  await expect(page.getByRole('button', { name: 'Minimal' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('la apariencia sobrevive a recargar y llega al tablero de la partida', async ({ page }) => {
   const usuario = await registrar(page, 'apb');
   await page.goto('/apariencia');
-  await page.getByRole('button', { name: /Océano/ }).click();
-  await page.getByRole('button', { name: /Contorno/ }).click();
+  await page.getByRole('tab', { name: 'Tablero' }).click();
+  await page.getByRole('button', { name: 'Océano' }).click();
+  await page.getByRole('tab', { name: 'Piezas' }).click();
+  await page.getByRole('button', { name: 'Contorno' }).click();
   await page.waitForTimeout(400);
 
   /**
@@ -128,14 +133,14 @@ test('el juego elegido llega al tablero de juego, no sólo al catálogo', async 
     page.evaluate(() => document.querySelector('[role="grid"] svg path')?.getAttribute('d')?.slice(0, 30) ?? '');
 
   await page.goto('/apariencia');
-  await page.getByRole('button', { name: /Clásicas/ }).click();
+  await page.getByRole('button', { name: 'Clásicas' }).click();
   await page.waitForTimeout(400);
   await page.goto('/practica');
   await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
   const clasicas = await dibujoDelTablero();
 
   await page.goto('/apariencia');
-  await page.getByRole('button', { name: /Minimal/ }).click();
+  await page.getByRole('button', { name: 'Minimal' }).click();
   await page.waitForTimeout(400);
   await page.goto('/practica');
   await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
@@ -143,4 +148,38 @@ test('el juego elegido llega al tablero de juego, no sólo al catálogo', async 
 
   expect(clasicas).not.toBe('');
   expect(minimal, 'el tablero siguió dibujando las mismas piezas').not.toBe(clasicas);
+});
+
+test('cada juego y cada tema del catálogo se puede elegir y se aplica', async ({ page }) => {
+  /**
+   * Recorre el catálogo entero en vez de un par de ejemplos: el día que se
+   * agregue una entrada con un id mal escrito o un color inválido, esto lo
+   * atrapa. Son datos, y los datos se rompen en silencio.
+   */
+  await registrar(page, 'apcat');
+  await page.goto('/apariencia');
+
+  await page.getByRole('tab', { name: 'Piezas' }).click();
+  for (const info of PIECE_SET_INFO) {
+    await page.getByRole('button', { name: info.label }).click();
+    await expect(page.getByRole('button', { name: info.label })).toHaveAttribute('aria-pressed', 'true');
+  }
+
+  await page.getByRole('tab', { name: 'Tablero' }).click();
+  for (const info of BOARD_THEME_INFO) {
+    await page.getByRole('button', { name: info.label }).click();
+    // El color del tema tiene que llegar a la variable que usa el tablero.
+    await expect
+      .poll(async () =>
+        page.evaluate(() =>
+          getComputedStyle(document.documentElement).getPropertyValue('--board-light').trim().toLowerCase(),
+        ),
+      )
+      .toBe(info.colores.light.toLowerCase());
+  }
+
+  // Y lo último elegido quedó guardado en el servidor.
+  const sesion = await page.evaluate(() => fetch('/api/auth/me').then((r) => r.json()));
+  expect(sesion.user.boardTheme).toBe(BOARD_THEME_INFO.at(-1)!.id);
+  expect(sesion.user.pieceSet).toBe(PIECE_SET_INFO.at(-1)!.id);
 });

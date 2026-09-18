@@ -221,24 +221,38 @@ UPDATE "User" SET role = 'MODERATOR' WHERE "usernameLower" = 'nombre';
 
 ## Personalización del tablero
 
-Cuatro juegos de piezas y cinco temas de tablero, en `/apariencia`. La elección
-se guarda en la **cuenta** y no en el navegador: quien juega desde el teléfono y
-desde la computadora espera ver sus mismas piezas.
+Nueve juegos de piezas y doce temas de tablero, en `/apariencia`, con acceso desde la
+cabecera. La elección se guarda en la **cuenta** y no en el navegador: quien juega desde el
+teléfono y desde la computadora espera ver sus mismas piezas.
 
-Los juegos no son cinco dibujos distintos. Tres comparten la geometría Staunton y
-cambian cómo se pinta —relleno, trazo y grosor—: *Clásicas*, *Contorno* (las
-blancas quedan huecas y dejan ver la casilla) y *Nítidas* (trazo grueso, con
-reborde claro en las negras para que no se empasten sobre casilla oscura).
-*Minimal* sí es otra geometría, construida con primitivas.
+La pantalla muestra la posición inicial completa con lo elegido, y debajo las miniaturas en
+pestañas. Cada juego se dibuja sobre la casilla del tablero que la persona ya eligió: una
+pieza clara puede verse bien sobre un fondo neutro y perderse en el tablero de verdad.
 
-Los temas son sólo cinco colores que se aplican como variables CSS sobre `<html>`,
-que es de donde el tablero ya los leía. Por eso el cambio alcanza de una vez al
-tablero, al visor de análisis, a las lecciones y a los puzzles sin tocar ninguno.
-Agregar un juego o un tema es sumar una entrada en `packages/shared/src/apariencia.ts`.
+Un juego de piezas es una geometría más los colores con que se rellena y se contornea, y un
+tema son cinco colores. Ambos son **datos** en `packages/shared/src/apariencia.ts`: agregar
+uno es añadir una entrada, y el componente que dibuja las piezas lee de esa misma tabla, así
+que la miniatura del catálogo y el tablero real no pueden divergir. Hay dos geometrías —el
+Staunton y una construida con primitivas—; el resto de la variedad sale del material.
 
-El catálogo dibuja cada opción con sus propias piezas y colores, alternando
-casilla clara y oscura: elegir por el nombre sería adivinar, y una pieza puede
-verse bien en una casilla y perderse en la otra.
+Los temas se aplican como variables CSS sobre `<html>`, que es de donde el tablero ya los
+leía. Por eso el cambio alcanza de una vez al tablero, al visor de análisis, a las lecciones
+y a los puzzles sin tocar ninguno.
+
+Una prueba recorre el catálogo entero eligiendo cada entrada y comprobando que el color llegue
+a la variable del tablero. Son datos, y los datos se rompen en silencio.
+
+## Piezas en movimiento
+
+La jugada recién hecha se desliza en 140 ms. La pieza ya está dibujada en su casilla de
+destino, así que no hace falta moverla: arranca desplazada hacia el origen y se deja caer a su
+sitio. Eso evita seguirle la pista a cada pieza entre una posición y la siguiente, que es lo
+caro y lo frágil.
+
+Con menos de diez segundos de reloj no se anima — en bullet, 140 ms entre ver la jugada y
+poder responder son 140 ms que no sobran — y quien pidió menos movimiento en su sistema
+tampoco la ve. Queda fuera el enroque: se desliza el rey y la torre aparece en su sitio,
+porque la jugada informa un solo origen y un solo destino.
 
 ## Accesibilidad
 
