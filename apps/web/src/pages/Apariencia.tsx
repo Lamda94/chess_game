@@ -101,9 +101,10 @@ export function Apariencia() {
   const { pieceSet, boardTheme, guardar, guardando } = useApariencia();
   const [pestana, setPestana] = useState<Pestana>('piezas');
 
+  const juego = PIECE_SET_INFO.find((p) => p.id === pieceSet);
   const nombreActual =
     pestana === 'piezas'
-      ? (PIECE_SET_INFO.find((p) => p.id === pieceSet)?.label ?? '')
+      ? (juego?.label ?? '')
       : (BOARD_THEME_INFO.find((t) => t.id === boardTheme)?.label ?? '');
 
   return (
@@ -152,9 +153,21 @@ export function Apariencia() {
         ))}
       </div>
 
-      <p className="m-0 text-center text-[13px]" style={{ color: 'var(--text-muted)' }}>
-        {nombreActual}
-      </p>
+      <div className="flex flex-col items-center gap-0.5">
+        <p className="m-0 text-[13px]" style={{ color: 'var(--text-muted)' }}>
+          {nombreActual}
+        </p>
+        {/*
+          Las piezas son obra de otras personas y varias licencias exigen
+          acreditarlas. Se nombra al autor de la que está puesta, que es donde
+          corresponde verlo.
+        */}
+        {pestana === 'piezas' && juego ? (
+          <p className="m-0 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+            por {juego.autor} · {juego.licencia}
+          </p>
+        ) : null}
+      </div>
 
       <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         {pestana === 'piezas'
@@ -193,7 +206,11 @@ export function Apariencia() {
       </div>
 
       <p className="m-0 text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
-        Se guarda en tu cuenta: te sigue a cualquier dispositivo.
+        Se guarda en tu cuenta: te sigue a cualquier dispositivo.{' '}
+        <a href="/piece/LICENCIAS.md" target="_blank" rel="noreferrer noopener">
+          Autores y licencias de las piezas
+        </a>
+        .
       </p>
     </div>
   );

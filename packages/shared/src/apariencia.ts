@@ -13,148 +13,66 @@ import { z } from 'zod';
 /* Juegos de piezas                                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Los juegos son archivos SVG servidos desde `/piece/<id>/<código>.svg`, con el
+ * código de la pieza como lo nombra la notación: `wN`, `bK`…
+ *
+ * No son obra de Gambito: son juegos libres de terceros, cada uno con su autor y
+ * su licencia, listados en `apps/web/public/piece/LICENCIAS.md`. Están sólo los
+ * que permiten uso comercial y son compatibles con la AGPLv3 de este proyecto;
+ * agregar uno exige comprobar su licencia antes y anotarla en esa tabla.
+ */
 export const PIECE_SETS = [
-  'clasicas',
-  'tinta',
-  'marmol',
-  'madera',
-  'metal',
-  'contorno',
-  'nitidas',
-  'minimal',
-  'silueta',
+  'cburnett',
+  'merida',
+  'fantasy',
+  'celtic',
+  'spatial',
+  'chessnut',
+  'mpchess',
+  'kiwen-suwi',
+  'papercut',
+  'totoy',
+  'pirouetti',
+  'rhosgfx',
   'pixel',
-  'pixel-noche',
+  'shapes',
+  'letter',
 ] as const;
 export type PieceSet = (typeof PIECE_SETS)[number];
 
 export interface PieceSetInfo {
   id: PieceSet;
   label: string;
-  descripcion: string;
-  /** Qué siluetas usa. */
-  geometria: 'staunton' | 'minimal' | 'pixel';
-  blanca: { fill: string; stroke: string };
-  negra: { fill: string; stroke: string };
-  grosor: number;
-  sombra: boolean;
+  autor: string;
+  licencia: string;
 }
 
 export const PIECE_SET_INFO: readonly PieceSetInfo[] = [
-  {
-    id: 'clasicas',
-    label: 'Clásicas',
-    descripcion: 'Marfil y ébano, con su contorno fino.',
-    geometria: 'staunton',
-    blanca: { fill: '#f8f3e6', stroke: '#2a2a2a' },
-    negra: { fill: '#1b1e23', stroke: '#000000' },
-    grosor: 1.4,
-    sombra: true,
-  },
-  {
-    id: 'tinta',
-    label: 'Tinta',
-    descripcion: 'Blanco y negro puros, dibujados a trazo.',
-    geometria: 'staunton',
-    blanca: { fill: '#ffffff', stroke: '#111111' },
-    negra: { fill: '#111111', stroke: '#111111' },
-    grosor: 2.2,
-    sombra: false,
-  },
-  {
-    id: 'marmol',
-    label: 'Mármol',
-    descripcion: 'Blanco frío contra pizarra.',
-    geometria: 'staunton',
-    blanca: { fill: '#f2f4f6', stroke: '#4a5058' },
-    negra: { fill: '#464d57', stroke: '#22262c' },
-    grosor: 1.5,
-    sombra: true,
-  },
-  {
-    id: 'madera',
-    label: 'Madera',
-    descripcion: 'Arce claro y nogal, como un juego de torneo.',
-    geometria: 'staunton',
-    blanca: { fill: '#e8cfa4', stroke: '#7a5a33' },
-    negra: { fill: '#6b4527', stroke: '#33200f' },
-    grosor: 1.5,
-    sombra: true,
-  },
-  {
-    id: 'metal',
-    label: 'Metal',
-    descripcion: 'Plata y grafito.',
-    geometria: 'staunton',
-    blanca: { fill: '#dfe3e8', stroke: '#79818b' },
-    negra: { fill: '#555c66', stroke: '#2b3037' },
-    grosor: 1.6,
-    sombra: true,
-  },
-  {
-    id: 'contorno',
-    label: 'Contorno',
-    descripcion: 'Las blancas son sólo su silueta y dejan ver la casilla.',
-    geometria: 'staunton',
-    blanca: { fill: 'none', stroke: '#1d1f24' },
-    negra: { fill: '#1b1e23', stroke: '#1d1f24' },
-    grosor: 1.9,
-    sombra: false,
-  },
-  {
-    id: 'nitidas',
-    label: 'Nítidas',
-    descripcion: 'Trazo grueso y mucho contraste. Cómodas en pantallas chicas.',
-    geometria: 'staunton',
-    blanca: { fill: '#ffffff', stroke: '#14161a' },
-    negra: { fill: '#14161a', stroke: '#efe9dc' },
-    grosor: 2.4,
-    sombra: true,
-  },
-  {
-    id: 'minimal',
-    label: 'Minimal',
-    descripcion: 'Figuras geométricas, sin adornos.',
-    geometria: 'minimal',
-    blanca: { fill: '#f8f3e6', stroke: '#33302b' },
-    negra: { fill: '#1b1e23', stroke: '#000000' },
-    grosor: 1.2,
-    sombra: false,
-  },
-  {
-    id: 'silueta',
-    label: 'Silueta',
-    descripcion: 'Las mismas figuras, en blanco y negro planos.',
-    geometria: 'minimal',
-    blanca: { fill: '#ffffff', stroke: '#111111' },
-    negra: { fill: '#111111', stroke: '#111111' },
-    grosor: 2,
-    sombra: false,
-  },
-  {
-    id: 'pixel',
-    label: 'Pixel',
-    descripcion: 'Dibujadas sobre una retícula, como en un juego de 8 bits.',
-    geometria: 'pixel',
-    blanca: { fill: '#f6f1e4', stroke: '#2f2a24' },
-    negra: { fill: '#232228', stroke: '#000000' },
-    grosor: 0,
-    sombra: false,
-  },
-  {
-    id: 'pixel-noche',
-    label: 'Pixel noche',
-    descripcion: 'La misma retícula, en ámbar y azul.',
-    geometria: 'pixel',
-    blanca: { fill: '#e8b75c', stroke: '#4a3413' },
-    negra: { fill: '#4f7fd6', stroke: '#16244a' },
-    grosor: 0,
-    sombra: false,
-  },
+  { id: 'cburnett', label: 'Clásicas', autor: 'Colin M.L. Burnett', licencia: 'GPLv2+' },
+  { id: 'merida', label: 'Mérida', autor: 'Armando Hernandez Marroquin', licencia: 'GPLv2+' },
+  { id: 'fantasy', label: 'Fantasía', autor: 'Maurizio Monge', licencia: 'MIT' },
+  { id: 'celtic', label: 'Celta', autor: 'Maurizio Monge', licencia: 'MIT' },
+  { id: 'spatial', label: 'Espacial', autor: 'Maurizio Monge', licencia: 'MIT' },
+  { id: 'chessnut', label: 'Chessnut', autor: 'Alexis Luengas', licencia: 'Apache 2.0' },
+  { id: 'mpchess', label: 'Trazo', autor: 'Maxime Chupin', licencia: 'GPLv3+' },
+  { id: 'kiwen-suwi', label: 'Kiwen', autor: 'neverRare', licencia: 'CC BY 4.0' },
+  { id: 'papercut', label: 'Papel', autor: 'Nikolay Anzarov', licencia: 'CC BY 4.0' },
+  { id: 'totoy', label: 'Totoy', autor: 'Kosal Sen', licencia: 'CC BY 4.0' },
+  { id: 'pirouetti', label: 'Pirouetti', autor: 'pirouetti', licencia: 'AGPLv3+' },
+  { id: 'rhosgfx', label: 'Rhos', autor: 'RhosGFX', licencia: 'CC0' },
+  { id: 'pixel', label: 'Pixel', autor: 'therealqtpi', licencia: 'AGPLv3+' },
+  { id: 'shapes', label: 'Formas', autor: 'flugsio', licencia: 'CC BY-SA 4.0' },
+  { id: 'letter', label: 'Letras', autor: 'usolando', licencia: 'AGPLv3+' },
 ];
 
 export function juegoDePiezas(id: PieceSet): PieceSetInfo {
   return PIECE_SET_INFO.find((p) => p.id === id) ?? PIECE_SET_INFO[0]!;
+}
+
+/** Ruta del archivo de una pieza dentro de un juego. */
+export function rutaDePieza(set: PieceSet, tipo: string, color: 'white' | 'black'): string {
+  return `/piece/${set}/${color === 'white' ? 'w' : 'b'}${tipo.toUpperCase()}.svg`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -235,4 +153,4 @@ export const apparienceSchema = z.object({
 });
 export type ApparienceInput = z.infer<typeof apparienceSchema>;
 
-export const APARIENCIA_POR_DEFECTO = { pieceSet: 'clasicas', boardTheme: 'madera' } as const;
+export const APARIENCIA_POR_DEFECTO = { pieceSet: 'cburnett', boardTheme: 'madera' } as const;

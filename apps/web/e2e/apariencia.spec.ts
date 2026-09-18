@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { colorDe, mover } from './ayudas.js';
-import { BOARD_THEME_INFO, PIECE_SET_INFO } from '@gambito/shared';
+import { BOARD_THEME_INFO, PIECE_SET_INFO, rutaDePieza } from '@gambito/shared';
 
 const TAG = Math.random().toString(36).slice(2, 7);
 
@@ -40,8 +40,8 @@ test('elegir piezas y tablero cambia el tablero de verdad', async ({ page }) => 
     .not.toBe(colorInicial);
 
   await page.getByRole('tab', { name: 'Piezas' }).click();
-  await page.getByRole('button', { name: 'Minimal' }).click();
-  await expect(page.getByRole('button', { name: 'Minimal' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Celta', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Celta', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('la apariencia sobrevive a recargar y llega al tablero de la partida', async ({ page }) => {
@@ -50,7 +50,7 @@ test('la apariencia sobrevive a recargar y llega al tablero de la partida', asyn
   await page.getByRole('tab', { name: 'Tablero' }).click();
   await page.getByRole('button', { name: 'Océano' }).click();
   await page.getByRole('tab', { name: 'Piezas' }).click();
-  await page.getByRole('button', { name: 'Contorno' }).click();
+  await page.getByRole('button', { name: 'Mérida', exact: true }).click();
   await page.waitForTimeout(400);
 
   /**
@@ -61,7 +61,7 @@ test('la apariencia sobrevive a recargar y llega al tablero de la partida', asyn
   await page.reload();
   const sesion = await page.evaluate(() => fetch('/api/auth/me').then((r) => r.json()));
   expect(sesion.user.boardTheme).toBe('oceano');
-  expect(sesion.user.pieceSet).toBe('contorno');
+  expect(sesion.user.pieceSet).toBe('merida');
   expect(sesion.user.username).toBe(usuario);
 
   // Y el tablero de práctica lo usa, no sólo la pantalla de ajustes.
@@ -129,25 +129,27 @@ test('se llega a personalizar desde cualquier pantalla', async ({ page }) => {
 test('el juego elegido llega al tablero de juego, no sólo al catálogo', async ({ page }) => {
   await registrar(page, 'apd');
 
-  const dibujoDelTablero = () =>
-    page.evaluate(() => document.querySelector('[role="grid"] svg path')?.getAttribute('d')?.slice(0, 30) ?? '');
+  /** De qué juego sale la primera pieza que hay en el tablero. */
+  const juegoEnElTablero = () =>
+    page.evaluate(() => {
+      const img = document.querySelector('[role="grid"] img') as HTMLImageElement | null;
+      return img ? new URL(img.src).pathname : '';
+    });
 
-  await page.goto('/apariencia');
-  await page.getByRole('button', { name: 'Clásicas' }).click();
-  await page.waitForTimeout(400);
-  await page.goto('/practica');
-  await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
-  const clasicas = await dibujoDelTablero();
+  const elegir = async (juego: string) => {
+    await page.goto('/apariencia');
+    await page.getByRole('button', { name: juego, exact: true }).click();
+    await page.waitForTimeout(400);
+    await page.goto('/practica');
+    await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
+    return juegoEnElTablero();
+  };
 
-  await page.goto('/apariencia');
-  await page.getByRole('button', { name: 'Minimal' }).click();
-  await page.waitForTimeout(400);
-  await page.goto('/practica');
-  await expect(page.getByRole('grid', { name: /Tablero de ajedrez/ })).toBeVisible({ timeout: 40_000 });
-  const minimal = await dibujoDelTablero();
+  const clasicas = await elegir('Clásicas');
+  const celta = await elegir('Celta');
 
-  expect(clasicas).not.toBe('');
-  expect(minimal, 'el tablero siguió dibujando las mismas piezas').not.toBe(clasicas);
+  expect(clasicas).toContain('/piece/cburnett/');
+  expect(celta, 'el tablero siguió usando el juego anterior').toContain('/piece/celtic/');
 });
 
 test('cada juego y cada tema del catálogo se puede elegir y se aplica', async ({ page }) => {
@@ -184,4 +186,40 @@ test('cada juego y cada tema del catálogo se puede elegir y se aplica', async (
   const sesion = await page.evaluate(() => fetch('/api/auth/me').then((r) => r.json()));
   expect(sesion.user.boardTheme).toBe(BOARD_THEME_INFO.at(-1)!.id);
   expect(sesion.user.pieceSet).toBe(PIECE_SET_INFO.at(-1)!.id);
+});
+
+test('todas las piezas de todos los juegos se sirven', async ({ page }) => {
+  /**
+   * Son archivos de terceros copiados al repositorio: si falta uno, el tablero
+   * muestra un hueco justo donde iba una pieza. Se piden los doce de cada juego,
+   * que es barato y evita descubrirlo en una partida.
+   */
+  await page.goto('/entrar');
+  const faltantes: string[] = [];
+
+  for (const info of PIECE_SET_INFO) {
+    for (const tipo of ['p', 'n', 'b', 'r', 'q', 'k']) {
+      for (const color of ['white', 'black'] as const) {
+        const ruta = rutaDePieza(info.id, tipo, color);
+        const respuesta = await page.request.get(ruta);
+        if (!respuesta.ok()) faltantes.push(`${ruta} -> ${respuesta.status()}`);
+      }
+    }
+  }
+
+  expect(faltantes, faltantes.slice(0, 5).join(' | ')).toEqual([]);
+});
+
+test('las licencias de las piezas se publican junto a ellas', async ({ page }) => {
+  // Varias de estas licencias exigen acreditar al autor. Si el archivo no se
+  // sirve, el despliegue está incumpliéndolas.
+  await page.goto('/entrar');
+  const respuesta = await page.request.get('/piece/LICENCIAS.md');
+  expect(respuesta.status()).toBe(200);
+
+  const texto = await respuesta.text();
+  for (const info of PIECE_SET_INFO) {
+    expect(texto, `falta acreditar ${info.id}`).toContain(info.id);
+    expect(texto, `falta el autor de ${info.id}`).toContain(info.autor);
+  }
 });

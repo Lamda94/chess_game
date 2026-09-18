@@ -221,26 +221,28 @@ UPDATE "User" SET role = 'MODERATOR' WHERE "usernameLower" = 'nombre';
 
 ## Personalización del tablero
 
-Nueve juegos de piezas y doce temas de tablero, en `/apariencia`, con acceso desde la
-cabecera. La elección se guarda en la **cuenta** y no en el navegador: quien juega desde el
-teléfono y desde la computadora espera ver sus mismas piezas.
+Quince juegos de piezas y doce temas de tablero, en `/apariencia`, con acceso desde la
+cabecera. La elección se guarda en la **cuenta** y no en el navegador.
 
-La pantalla muestra la posición inicial completa con lo elegido, y debajo las miniaturas en
-pestañas. Cada juego se dibuja sobre la casilla del tablero que la persona ya eligió: una
-pieza clara puede verse bien sobre un fondo neutro y perderse en el tablero de verdad.
+**Las piezas no son obra de este proyecto.** Son juegos libres de terceros, cada uno con su
+autor y su licencia, tomados de la colección que mantiene lichess y listados en
+[`apps/web/public/piece/LICENCIAS.md`](apps/web/public/piece/LICENCIAS.md). Antes se
+dibujaban a mano acá; el resultado no llegaba ni de cerca al de un set hecho por un
+ilustrador, y mantener nueve variantes de dos siluetas era mucho código para poca variedad.
 
-Un juego de piezas es una geometría más los colores con que se rellena y se contornea, y un
-tema son cinco colores. Ambos son **datos** en `packages/shared/src/apariencia.ts`: agregar
-uno es añadir una entrada, y el componente que dibuja las piezas lee de esa misma tabla, así
-que la miniatura del catálogo y el tablero real no pueden divergir. Hay dos geometrías —el
-Staunton y una construida con primitivas—; el resto de la variedad sale del material.
+Están **sólo los que permiten uso comercial** y son compatibles con la AGPLv3 de Gambito.
+Los juegos de lichess con licencia CC BY-NC-SA quedaron fuera a propósito, aunque varios son
+más lindos: prohíben el uso comercial, y eso contradice la licencia de este proyecto, que sí
+lo permite. Agregar un juego exige comprobar su licencia antes y anotarla en esa tabla.
 
-Los temas se aplican como variables CSS sobre `<html>`, que es de donde el tablero ya los
-leía. Por eso el cambio alcanza de una vez al tablero, al visor de análisis, a las lecciones
-y a los puzzles sin tocar ninguno.
+Varias de esas licencias obligan a acreditar al autor, así que la pantalla nombra al de las
+piezas que están puestas y enlaza la tabla completa. Dos pruebas lo cuidan: una pide los
+ciento ochenta archivos para que no falte ninguno, y otra comprueba que cada autor figure en
+las licencias publicadas.
 
-Una prueba recorre el catálogo entero eligiendo cada entrada y comprobando que el color llegue
-a la variable del tablero. Son datos, y los datos se rompen en silencio.
+Los temas del tablero sí son nuestros: cinco colores que se aplican como variables CSS sobre
+`<html>`, que es de donde el tablero ya los leía. Por eso el cambio alcanza de una vez al
+tablero, al visor de análisis, a las lecciones y a los puzzles sin tocar ninguno.
 
 ## Piezas en movimiento
 

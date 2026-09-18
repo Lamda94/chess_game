@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { BOARD_THEME_INFO } from '@gambito/shared';
 
 /**
  * Contraste AA.
@@ -100,22 +101,20 @@ describe.each([
 
 describe('tablero', () => {
   /**
-   * Cada pieza se dibuja con relleno y con un trazo oscuro alrededor. Lo que la
-   * recorta contra la casilla es el que más contraste tenga de los dos: la
-   * dama blanca sobre casilla clara casi no se distingue por su relleno, y sin
-   * embargo se lee perfecto porque el contorno da 10:1.
+   * Antes esto medía las piezas contra la casilla. Ya no tiene sentido: las
+   * piezas son archivos SVG de terceros y traen sus propios colores, así que
+   * `--piece-white` y `--piece-black` no las pintan.
+   *
+   * Lo que sí sigue estando en nuestras manos, y es lo que hay que cuidar, es
+   * que las dos casillas de cada tema se distingan entre sí. Si el tema tiene
+   * poco contraste no hay juego de piezas que lo salve: el tablero se lee mal
+   * igual.
    */
-  const TRAZO = { '--piece-white': '#2a2a2a', '--piece-black': '#000000' } as const;
-
-  it.each(['--piece-white', '--piece-black'] as const)('la pieza %s se recorta en las dos casillas', (pieza) => {
-    for (const casilla of ['--board-light', '--board-dark']) {
-      const porRelleno = contraste(OSCURO[pieza]!, OSCURO[casilla]!);
-      const porTrazo = contraste(TRAZO[pieza], OSCURO[casilla]!);
-      const mejor = Math.max(porRelleno, porTrazo);
-      expect(
-        Number(mejor.toFixed(2)),
-        `${pieza} sobre ${casilla}: relleno ${porRelleno.toFixed(2)}, trazo ${porTrazo.toFixed(2)}`,
-      ).toBeGreaterThanOrEqual(3);
-    }
-  });
+  it.each(BOARD_THEME_INFO.map((t) => [t.label, t.colores.light, t.colores.dark] as const))(
+    'en el tema %s se distinguen la casilla clara y la oscura',
+    (_label, claro, oscuro) => {
+      const ratio = contraste(claro, oscuro);
+      expect(Number(ratio.toFixed(2)), `${claro} contra ${oscuro}`).toBeGreaterThanOrEqual(1.8);
+    },
+  );
 });

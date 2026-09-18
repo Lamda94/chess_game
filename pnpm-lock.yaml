@@ -213,6 +213,9 @@ importers:
 
   packages/ui:
     devDependencies:
+      '@gambito/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@types/react':
         specifier: ^19.0.7
         version: 19.3.0
