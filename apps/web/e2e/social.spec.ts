@@ -97,6 +97,9 @@ test('una partida ajena se puede espectar sin poder mover', async ({ browser }) 
   // Ve la partida pero no tiene botones de jugador ni chat.
   await expect(espectador.getByRole('button', { name: 'Rendirse' })).toHaveCount(0);
   await expect(espectador.getByText('CHAT')).toHaveCount(0);
+  // Y ninguno de los dos jugadores figura como "vos": el espectador no es nadie
+  // en esta partida, y antes se le marcaba al de abajo como si lo fuera.
+  await expect(espectador.getByText('· vos')).toHaveCount(0);
 
   // Y tocar el tablero no mueve nada.
   await espectador.getByRole('gridcell', { name: /^e2,/ }).click();

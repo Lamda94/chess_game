@@ -200,7 +200,9 @@ export function Partida() {
             side={orientation}
             clockMs={displayed(orientation)}
             active={state.status === 'ACTIVE' && state.turn === orientation}
-            you
+            // Sólo si quien mira es de verdad ese jugador: a un espectador se le
+            // marcaba como "vos" al de abajo, que no es nadie suyo.
+            you={myColor !== null}
           />
         </div>
       </div>
