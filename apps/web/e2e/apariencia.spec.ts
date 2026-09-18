@@ -195,18 +195,24 @@ test('todas las piezas de todos los juegos se sirven', async ({ page }) => {
    * que es barato y evita descubrirlo en una partida.
    */
   await page.goto('/entrar');
-  const faltantes: string[] = [];
 
-  for (const info of PIECE_SET_INFO) {
-    for (const tipo of ['p', 'n', 'b', 'r', 'q', 'k']) {
-      for (const color of ['white', 'black'] as const) {
-        const ruta = rutaDePieza(info.id, tipo, color);
-        const respuesta = await page.request.get(ruta);
-        if (!respuesta.ok()) faltantes.push(`${ruta} -> ${respuesta.status()}`);
-      }
-    }
-  }
+  const rutas = PIECE_SET_INFO.flatMap((info) =>
+    ['p', 'n', 'b', 'r', 'q', 'k'].flatMap((tipo) =>
+      (['white', 'black'] as const).map((color) => rutaDePieza(info.id, tipo, color)),
+    ),
+  );
 
+  // En paralelo: de a una, ciento ochenta idas y vueltas contra un despliegue
+  // real no entran en el tiempo de la prueba.
+  const resultados = await Promise.all(
+    rutas.map(async (ruta) => {
+      const respuesta = await page.request.get(ruta);
+      return respuesta.ok() ? null : `${ruta} -> ${respuesta.status()}`;
+    }),
+  );
+  const faltantes = resultados.filter((r): r is string => r !== null);
+
+  expect(rutas).toHaveLength(PIECE_SET_INFO.length * 12);
   expect(faltantes, faltantes.slice(0, 5).join(' | ')).toEqual([]);
 });
 
